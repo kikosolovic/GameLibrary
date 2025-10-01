@@ -74,17 +74,37 @@ body {
   background: #c07845;
 }
 
+.user-row {
+  display: flex;
+  flex-direction: row;  
+  align-items: center;   
+  gap: 0.5rem;           
+  margin-top: auto;      
+}
+
+/* Imagen del usuario */
+.username-picture img {
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  object-fit: cover;     /* centers imag*/
+}
+
+/* fixes button inside container*/
 .shelf-button-logout {
-  width: 100px;
-  margin-top: auto;   /* lo manda al fondo del sidebar */
+  width: 90px;
   padding: 0.6rem 1.2rem;
   border-radius: 6px;
   cursor: pointer;
+  background-color: rgba(60, 40, 25, 0.9); 
+  color: #f5e1c8;  
+  border: none;    
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
-.shelf-button-logout:hover {
-  background: #afa9a8;
-  color: #2d1b12;
+.shelf-button-logout:hover { 
+  background: #afa9a8; 
+  color: #2d1b12; 
 }
 
 /* Shelves for games */
