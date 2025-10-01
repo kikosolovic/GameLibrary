@@ -15,8 +15,8 @@ body {
 /* Background with bookshelf */
 .library-background {
   min-height: 100vh;
-  background: url('Assets/Cosy\ Library\ with\ Warm\ Lamp.png') no-repeat center center fixed;
-  background-size:  1910px;
+  background: url('Assets/Coziness\ of\ a\ Library\ Corner.png') no-repeat center center fixed;
+  background-size:  cover;
   display: flex;
   flex-direction: column;
 }
@@ -24,41 +24,30 @@ body {
 /* Header area */
 .library-header {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: left;
   padding: 1rem;
   gap: 1rem;
   background-color: rgba(60, 40, 25, 0.9);
   border-bottom: 3px solid #2d1b12;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  height: 100vh;
+  width: 220px;   
+  border-right: 3px solid #2d1b12;
   z-index: 10;
-}
-
-/* Book spine-style buttons */
-.shelf-button {
-  background: #a0653c;
-  color: #fff;
-  padding: 0.6rem 1.2rem;
-  border-radius: 6px;
-  font-weight: bold;
-  box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
-  cursor: pointer;
-  transition: background 0.3s ease;
-}
-
-.shelf-button:hover {
-  background: #c07845;
 }
 
 /* Search bar */
 .search-bar {
-  flex-grow: 1;
-  display: flex;
+  margin-top: 1rem;
+  /* flex-grow: 1; */
   justify-content: flex-end;
 }
 
 .search-bar input {
-  width: 200px;
+  width: 186px;
   padding: 0.5rem 1rem;
   border-radius: 6px;
   border: none;
@@ -67,11 +56,42 @@ body {
   font-size: 1rem;
 }
 
+/* Book spine-style buttons */
+.shelf-button {
+  background: #a0653c;
+  color: #fff;
+  margin-top: 0.3rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  width: 160px;
+  transition: background 0.3s ease;
+}
+
+.shelf-button:hover {
+  background: #c07845;
+}
+
+.shelf-button-logout {
+  width: 100px;
+  margin-top: auto;   /* lo manda al fondo del sidebar */
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.shelf-button-logout:hover {
+  background: #afa9a8;
+  color: #2d1b12;
+}
+
 /* Shelves for games */
 .library-content {
   flex: 1;
   overflow-y: auto;
-  margin-left: 90px;
+  margin-left: 220px;
   padding: 2rem;
   display: flex;
   flex-direction: column;
