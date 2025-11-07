@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Game Library{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/styles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="library-background">
+    <!-- Header with controls -->
+    <header class="library-header">
+        <div class="search-bar">
+            <input type="text" placeholder="Search...">
+        </div>
+
+        <div class="shelf-button">Algo</div>
+        <div class="shelf-button">Filter</div>
+        <div class="shelf-button">...</div>
+
+        <div class="user-row">
+            <button class="shelf-button-logout">Log out</button>
+            <div class="username-picture">
+                <img src="{% static 'images/bubly.png' %}" alt="">
+            </div>
+        </div>
+    </header>
+
+    <!-- Scrollable content -->
+    <main class="library-content">
+        <div class="shelf">
+            <!-- Example game card -->
+            <div class="game-card" onclick="window.location.href='{% url 'gamecard' id=1 %}'">
+                <div class="game-card-spine"></div>
+                <img src="https://via.placeholder.com/150x220/3b2a20/f5e1c8?text=Cover" 
+                     alt="Game Cover" 
+                     class="game-card-cover">
+                <div class="game-card-title">Zelda: Breath of the Wild</div>
+            </div>
+        </div>
+        <div class="shelf"></div>
+        <div class="shelf"></div>
+        <div class="shelf"></div>
+        <div class="shelf"></div>
+    </main>
+</div>
+{% endblock %}

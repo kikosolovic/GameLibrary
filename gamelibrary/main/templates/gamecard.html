@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Game Detail - Open Book{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/game-detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="book-overlay">
+    <div class="open-book">
+        <!-- Book spine -->
+        <div class="book-spine"></div>
+
+        <!-- Left page -->
+        <div class="book-page-left">
+            <div class="page-lines"></div>
+            <img src="https://via.placeholder.com/400x500/3b2a20/f5e1c8?text=Game+Cover" 
+                 alt="Game Cover" 
+                 class="game-cover">
+            
+            <div class="screenshot-gallery">
+                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=1" 
+                     alt="Screenshot 1" 
+                     class="screenshot-thumb">
+                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=2" 
+                     alt="Screenshot 2" 
+                     class="screenshot-thumb">
+                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=3" 
+                     alt="Screenshot 3" 
+                     class="screenshot-thumb">
+            </div>
+        </div>
+
+        <!-- Right page -->
+        <div class="book-page-right">
+            <div class="page-lines"></div>
+            
+            <!-- Close bookmark -->
+            <div class="close-bookmark" title="Close">×</div>
+
+            <h1 class="game-title">The Legend of Zelda: Breath of the Wild</h1>
+
+            <div class="game-meta">
+                <span class="meta-badge">Action-Adventure</span>
+                <span class="meta-badge">Open World</span>
+                <span class="meta-badge">2017</span>
+            </div>
+
+            <div class="game-rating">
+                <span class="rating-stars">★★★★★</span>
+                <span>9.5/10</span>
+            </div>
+
+            <div class="game-description">
+                Step into a world of discovery, exploration, and adventure in The Legend of Zelda: 
+                Breath of the Wild, a boundary-breaking new game in the acclaimed series. Travel 
+                across vast fields, through forests, and to mountain peaks as you discover what has 
+                become of the kingdom of Hyrule in this stunning Open-Air Adventure.
+                <br><br>
+                Explore the wilds of Hyrule any way you like - climb up towers and mountain peaks 
+                in search of new destinations, then set your own path to get there and plunge into 
+                the wilderness. Along the way, you'll battle towering enemies, hunt wild beasts, and 
+                gather ingredients for the food and elixirs you'll need to sustain you on your journey.
+                <br><br>
+                More than 100 Shrines of Trials to discover and explore. Shrines dot the landscape, 
+                waiting to be discovered in any order you want. Search for them in various ways, and 
+                solve a variety of puzzles inside.
+            </div>
+
+            <div class="game-actions">
+                <button class="action-button">Add to Favorites ❤️</button>
+                <button class="action-button secondary">Mark as Played ✓</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Close book when clicking bookmark
+    document.querySelector('.close-bookmark').addEventListener('click', function() {
+        window.location.href = "{% url 'index' %}";
+    });
+
+    // Close book when clicking outside the book
+    document.querySelector('.book-overlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.location.href = "{% url 'index' %}";
+        }
+    });
+</script>
+{% endblock %}

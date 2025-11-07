@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Game Library{% endblock %}</title>
+
+    <!-- Page-specific CSS -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Main content -->
+    {% block content %}{% endblock %}
+
+    <!-- Page-specific JS -->
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

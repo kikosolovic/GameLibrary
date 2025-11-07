@@ -15,7 +15,7 @@ body {
 /* Background with bookshelf */
 .library-background {
   min-height: 100vh;
-  background: url('Assets/Coziness\ of\ a\ Library\ Corner.png') no-repeat center center fixed;
+  background: url('../images/background.png') no-repeat center center fixed;
   background-size:  cover;
   display: flex;
   flex-direction: column;
