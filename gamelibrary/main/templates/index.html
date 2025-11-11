@@ -20,11 +20,20 @@
         <div class="shelf-button">...</div>
 
         <div class="user-row">
-            <button class="shelf-button-logout">Log out</button>
+        {% if request.session.user_id %}
+        <!-- User is logged in -->
+            <form method="POST" action="{% url 'logout' %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="shelf-button-logout">Log out</button>
+            </form>
             <div class="username-picture">
-                <img src="{% static 'images/bubly.png' %}" alt="">
+                <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
             </div>
-        </div>
+    {% else %}
+        <!-- Guest -->
+        <a href="{% url 'login' %}" class="shelf-button-logout">Log in</a>
+    {% endif %}
+</div>
     </header>
 
     <!-- Scrollable content -->

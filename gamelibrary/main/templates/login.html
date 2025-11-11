@@ -10,12 +10,21 @@
 {% block content %}
 <div class="main">
     <h1>Login</h1>
-    <i><a href="{% url 'index' %}">admin access</a></i>
-    <form>
-        <input type="text" id="username" name="username" placeholder="Username" required>
+
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <p class="error">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form id="login-form" method="POST" novalidate>
+        {% csrf_token %}
+        {{ form.username }}
 
         <div class="password-wrapper">
-            <input type="password" id="password" name="password" placeholder="Password" required>
+            {{ form.password }}
             <span class="toggle-password" onclick="togglePassword()">
                 <svg id="eye-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -26,6 +35,11 @@
 
         <button class="button1" type="submit">Log In</button>
     </form>
+
+    <div class="guest-login" style="margin-top: 10px;">
+        <a href="{% url 'index' %}" class="button1" style="display: inline-block;">Continue as Guest</a>
+    </div>
+
     <p>Don't have account? <a href="{% url 'register' %}">Sign up here</a></p>
 </div>
 {% endblock %}

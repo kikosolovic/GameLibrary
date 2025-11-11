@@ -70,9 +70,15 @@
             </div>
 
             <div class="game-actions">
-                <button class="action-button">Add to Favorites ❤️</button>
-                <button class="action-button secondary">Mark as Played ✓</button>
+                {% if request.session.user_id %}
+                    <button class="action-button">Add to Favorites ❤️</button>
+                    <button class="action-button secondary">Mark as Played ✓</button>
+                {% else %}
+                    <!-- Optional: prompt guest to log in -->
+                    <p><a href="{% url 'login' %}">Log in</a> to add to favorites or mark as played.</p>
+                {% endif %}
             </div>
+
         </div>
     </div>
 </div>

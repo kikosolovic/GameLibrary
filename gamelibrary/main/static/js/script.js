@@ -11,17 +11,17 @@ function togglePassword(event) {
     }
 }
 //script for register comparing passwordss
-function validatePasswords() {
-    const password = document.getElementById('password1').value;
+function validatePasswords(event) {
+    const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('password2').value;
     const errorMessage = document.getElementById('error-message');
 
     if (password !== confirmPassword) {
         errorMessage.textContent = 'Passwords do not match!';
-        errorMessage.style.color = 'red';   
+        errorMessage.style.color = 'red';  
+        if (event) event.preventDefault(); 
         return false; 
     } else {
-        errorMessage.textContent = '';
         errorMessage.textContent = 'Good!';
         errorMessage.style.color = 'green';
         return true; 
