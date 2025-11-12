@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile - Open Book{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="book-overlay">
+    <div class="open-book">
+        <!-- Book spine -->
+        <div class="book-spine"></div>
+
+        <!-- Left page - User Info -->
+        <div class="book-page-left">
+            <div class="page-lines"></div>
+            
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="Profile Avatar">
+                    {% else %}
+                        <div class="avatar-placeholder">
+                            {{ user.username|first|upper }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <h1 class="profile-username">{{ user.username }}</h1>
+                
+                <div class="profile-stats">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ favorites_count|default:0 }}</span>
+                        <span class="stat-label">Favorites</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ played_count|default:0 }}</span>
+                        <span class="stat-label">Played</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Details Section -->
+            <div class="user-details">
+                <h2 class="section-title">About Me</h2>
+                
+                <div class="detail-item">
+                    <span class="detail-label">Email:</span>
+                    <span class="detail-value">{{ user.email }}</span>
+                </div>
+                
+                {% if user.bio %}
+                <div class="detail-item bio">
+                    <span class="detail-label">Bio:</span>
+                    <p class="detail-value">{{ user.bio }}</p>
+                </div>
+                {% endif %}
+                
+                <div class="profile-actions">
+                    <button class="action-button edit-profile">
+                        Edit Profile
+                    </button>
+                    <button class="action-button secondary logout">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right page - Games Lists -->
+        <div class="book-page-right">
+            <div class="page-lines"></div>
+            
+            <!-- Close bookmark -->
+            <div class="close-bookmark" title="Close">×</div>
+
+            <!-- Tab Navigation -->
+            <div class="games-tabs">
+                <button class="tab-button active" data-tab="favorites">
+                     My Favorites
+                </button>
+                <button class="tab-button" data-tab="played">
+                     Played Games
+                </button>
+            </div>
+
+            <!-- Favorites List -->
+            <div class="games-list" id="favorites-list">
+                {% if favorite_games %}
+                    {% for game in favorite_games %}
+                    <div class="game-item">
+                        <div class="game-item-cover">
+                            {% if game.cover_image %}
+                                <img src="{{ game.cover_image.url }}" alt="{{ game.title }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/60x80/3b2a20/f5e1c8?text=Game" alt="{{ game.title }}">
+                            {% endif %}
+                        </div>
+                        <div class="game-item-info">
+                            <h3 class="game-item-title">{{ game.title }}</h3>
+                            <div class="game-item-meta">
+                                <span class="meta-badge mini">{{ game.genre }}</span>
+                                <span class="meta-badge mini">{{ game.year }}</span>
+                            </div>
+                            <div class="game-item-rating">
+                                <span class="rating-stars-mini">★★★★★</span>
+                                <span>{{ game.rating|default:"9.0" }}/10</span>
+                            </div>
+                        </div>
+                        <div class="game-item-actions">
+                            <a href="{% url 'gamecard' game.id %}" class="view-button">View</a>
+                            <button class="remove-button" data-game-id="{{ game.id }}" data-type="favorite">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>No favorite games yet!</p>
+                        <p class="empty-state-hint">Browse our collection and add games you love.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Played Games List -->
+            <div class="games-list" id="played-list" style="display: none;">
+                {% if played_games %}
+                    {% for game in played_games %}
+                    <div class="game-item">
+                        <div class="game-item-cover">
+                            {% if game.cover_image %}
+                                <img src="{{ game.cover_image.url }}" alt="{{ game.title }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/60x80/3b2a20/f5e1c8?text=Game" alt="{{ game.title }}">
+                            {% endif %}
+                        </div>
+                        <div class="game-item-info">
+                            <h3 class="game-item-title">{{ game.title }}</h3>
+                            <div class="game-item-meta">
+                                <span class="meta-badge mini">{{ game.genre }}</span>
+                                <span class="meta-badge mini">{{ game.year }}</span>
+                            </div>
+                        </div>
+                        <div class="game-item-actions">
+                            <a href="{% url 'gamecard' game.id %}" class="view-button">View</a>
+                            <button class="remove-button" data-game-id="{{ game.id }}" data-type="played">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>No games marked as played yet!</p>
+                        <p class="empty-state-hint">Start tracking your gaming journey today.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-button').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Hide all lists
+            document.querySelectorAll('.games-list').forEach(list => {
+                list.style.display = 'none';
+            });
+            
+            // Show selected list
+            const tabName = this.dataset.tab;
+            document.getElementById(tabName + '-list').style.display = 'block';
+        });
+    });
+
+    // Close book when clicking bookmark
+    document.querySelector('.close-bookmark').addEventListener('click', function() {
+        window.location.href = "{% url 'index' %}";
+    });
+
+    // Close book when clicking outside the book
+    document.querySelector('.book-overlay').addEventListener('click', function(e) {
+        if (e.target === this) {
+            window.location.href = "{% url 'index' %}";
+        }
+    });
+
+    // Edit profile button
+    document.querySelector('.edit-profile').addEventListener('click', function() {
+        window.location.href = "{% url 'edit_profile' %}";
+    });
+
+    // Logout button
+    document.querySelector('.logout').addEventListener('click', function() {
+        if (confirm('Are you sure you want to logout?')) {
+            window.location.href = "{% url 'logout' %}";
+        }
+    });
+
+    // Remove game from list
+    document.querySelectorAll('.remove-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const gameId = this.dataset.gameId;
+            const type = this.dataset.type;
+            
+            if (confirm(`Remove this game from your ${type} list?`)) {
+                // AJAX call to remove game
+                fetch(`/api/remove-from-${type}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ game_id: gameId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Remove the game item from the DOM
+                        this.closest('.game-item').remove();
+                        
+                        // Update count if needed
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to remove game. Please try again.');
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

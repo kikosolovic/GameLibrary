@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+import json
 
 from .forms import RegistrationForm, LoginForm
 from .models import Users
@@ -50,8 +52,144 @@ def register_view(request):
     
     return render(request, 'register.html', {'form':form})
 
+def profile_view(request):
+    """
+    Display user profile with favorites and played games
+    """
+    # Check if user is logged in
+    user_id = request.session.get('user_id')
+    if not user_id:
+        messages.error(request, "Please log in to view your profile.")
+        return redirect('login')
+    
+    try:
+        user = Users.objects.get(id=user_id)
+    except Users.DoesNotExist:
+        messages.error(request, "User not found.")
+        return redirect('login')
+    
+    favorite_games = [
+        {
+            'id': 1,
+            'title': 'The Legend of Zelda: Breath of the Wild',
+            'cover_image': None, 
+            'genre': 'Action-Adventure',
+            'year': 2017,
+            'rating': 9.5
+        },
+        {
+            'id': 7,
+            'title': 'The Witcher 3: Wild Hunt',
+            'cover_image': None,
+            'genre': 'RPG',
+            'year': 2015,
+            'rating': 9.8
+        },
+        {
+            'id': 3,
+            'title': 'Stardew Valley',
+            'cover_image': None,
+            'genre': 'Simulation',
+            'year': 2016,
+            'rating': 9.0
+        }
+    ]
+    
+    played_games = [
+        {
+            'id': 2,
+            'title': 'Elden Ring',
+            'cover_image': None,
+            'genre': 'RPG',
+            'year': 2022,
+        },
+        {
+            'id': 6,
+            'title': 'Hades',
+            'cover_image': None,
+            'genre': 'Rogue-like',
+            'year': 2020,
+        },
+        {
+            'id': 11,
+            'title': 'Portal 2',
+            'cover_image': None,
+            'genre': 'Puzzle',
+            'year': 2011,
+        }
+    ]
+    
+    context = {
+        'user': user,
+        'favorite_games': favorite_games,
+        'played_games': played_games,
+        'favorites_count': len(favorite_games),
+        'played_count': len(played_games)
+    }
+    
+    return render(request, 'profile.html', context)
+
+@require_POST
+def remove_from_favorites(request):
+    """
+    AJAX endpoint to remove a game from favorites
+    """
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'})
+    
+    try:
+        data = json.loads(request.body)
+        game_id = data.get('game_id')
+        
+        # TODO: Implement actual removal from database
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+def remove_from_played(request):
+    """
+    AJAX endpoint to remove a game from played list
+    """
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'})
+    
+    try:
+        data = json.loads(request.body)
+        game_id = data.get('game_id')
+        
+        # TODO: Implement actual removal from database
+      
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+def edit_profile_view(request):
+    """
+    Edit profile page (to be implemented)
+    """
+    user_id = request.session.get('user_id')
+    if not user_id:
+        messages.error(request, "Please log in to edit your profile.")
+        return redirect('login')
+    
+    # TODO: Implement edit profile functionality
+    messages.info(request, "Profile editing coming soon!")
+    return redirect('profile')
+
 def gamecard(request, id=None):
     return render(request, 'gamecard.html')
+
+def game_detail(request, id):
+    """
+    Display individual game details
+    """
+    # TODO: Fetch actual game data from database
+    # For now, returning the gamecard template
+    return render(request, 'gamecard.html', {'game_id': id})
 
 def search_api(request):
     """
@@ -178,7 +316,6 @@ def search_games_by_name(query):
             'cover_image': 'https://via.placeholder.com/90x120/3b2a20/f5e1c8?text=Terraria',
             'genre': 'Sandbox'
         },
-        # Games starting with "blo" for demo
         {
             'id': 15,
             'title': 'Bloodborne',
