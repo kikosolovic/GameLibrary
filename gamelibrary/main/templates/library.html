@@ -9,6 +9,7 @@
 
 {% block content %}
 <div class="library-background">
+
     <!-- Sidebar header -->
     <header class="library-header">
         <div class="search-bar">
@@ -21,7 +22,6 @@
 
         <div class="user-row">
             {% if request.session.user_id %}
-                <!-- Logged-in user -->
                 <form method="POST" action="{% url 'logout' %}" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="shelf-button-logout">Log out</button>
@@ -30,27 +30,83 @@
                     <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
                 </div>
             {% else %}
-                <!-- Guest -->
                 <a href="{% url 'login' %}" class="shelf-button-logout">Log in</a>
             {% endif %}
         </div>
     </header>
 
-    <!-- Main content -->
-<main class="library-content">
-    {% for shelf in shelves %}
-        <div class="shelf">
-            {% for game in shelf %}
-                <div class="game-card" onclick="window.location.href='{% url 'gamecard' id=game.id %}'">
-                    <img src="{{ game.image }}" alt="{{ game.name }}" class="game-card-cover">
-                    <div class="game-overlay">
-                        <div class="game-title">{{ game.name }}</div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% endfor %}
-</main>
 
+    <!-- Main content -->
+    <main class="library-content">
+
+        {% for shelf in shelves %}
+        <div class="shelf">
+
+            {% for game in shelf %}
+            <!-- Game Card -->
+            <div class="game-card" data-appid="{{ game.appid }}">
+                
+                <img src="{{ game.image }}" 
+                     alt="{{ game.name }}" 
+                     class="game-card-cover">
+
+                <div class="game-overlay">
+                    <!-- Title link (fallback if JS disabled) -->
+                    <a href="{% url 'game_detail' game.appid %}" class="game-title-link">
+                        <div class="game-title">{{ game.name }}</div>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+        {% endfor %}
+
+    </main>
+
+    <!-- Loaded book overlay HTML will appear here -->
+    <div id="book-overlay-container"></div>
 </div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script>
+// Handle click on game cards
+document.querySelectorAll('.game-card').forEach(card => {
+    card.addEventListener('click', async () => {
+
+        const appid = card.dataset.appid;   // ✔ Use Steam AppID
+
+        try {
+            const res = await fetch(`/game/${appid}/`);
+            if (!res.ok) throw new Error("Failed to load overlay");
+
+            const html = await res.text();
+
+            const overlay = document.getElementById('book-overlay-container');
+            overlay.innerHTML = html;
+            overlay.style.display = "block";
+
+            document.body.classList.add("book-open");
+        } 
+        catch (err) {
+            console.error(err);
+        }
+    });
+});
+
+
+// Close overlay on click outside OR close button
+document.addEventListener('click', (e) => {
+    if (
+        e.target.classList.contains('book-overlay') || 
+        e.target.classList.contains('close-bookmark')
+    ) {
+        document.getElementById('book-overlay-container').innerHTML = "";
+        document.body.classList.remove("book-open");
+    }
+});
+</script>
 {% endblock %}

@@ -3,12 +3,11 @@ from django.core.management.base import BaseCommand
 from main.models import Game
 
 class Command(BaseCommand):
-    help = "Fetch 1000 popular games from SteamSpy quickly, skipping entries without valid images."
+    help = "Fast update: fetch 1000 popular Steam games WITHOUT Steam Store API slow calls."
 
     def handle(self, *args, **options):
-        self.stdout.write("🟢 Fetching popular games from SteamSpy...")
+        self.stdout.write("🟢 FAST FETCH: SteamSpy lists...")
 
-        # SteamSpy endpoints (combined top lists)
         endpoints = [
             "top100in2weeks",
             "top100owned",
@@ -18,7 +17,7 @@ class Command(BaseCommand):
 
         all_games = {}
 
-        # Fetch all data (no heavy checks)
+        # Fetch 4 lists (very fast)
         for endpoint in endpoints:
             url = f"https://steamspy.com/api.php?request={endpoint}"
             try:
@@ -26,57 +25,52 @@ class Command(BaseCommand):
                 if r.status_code == 200:
                     data = r.json()
                     all_games.update(data)
-                    self.stdout.write(f"✅ {endpoint}: {len(data)} games fetched.")
+                    self.stdout.write(f"✅ {endpoint}: {len(data)} games")
                 else:
-                    self.stdout.write(f"⚠️ {endpoint} returned status {r.status_code}")
+                    self.stdout.write(f"⚠️ Error {r.status_code} loading {endpoint}")
             except Exception as e:
-                self.stdout.write(f"⚠️ Error fetching {endpoint}: {e}")
+                self.stdout.write(f"⚠️ Failed {endpoint}: {e}")
 
-        total_fetched = len(all_games)
-        self.stdout.write(f"🧩 Total unique games fetched: {total_fetched}")
+        self.stdout.write(f"🧩 Total unique SteamSpy games: {len(all_games)}")
 
-        # 🧹 (Optional) clear existing games
+        # Clear old DB
         Game.objects.all().delete()
-        self.stdout.write("🧹 Old games deleted.")
+        self.stdout.write("🧹 Old games removed.")
 
-        # 💾 Save valid games (fast, without HEAD calls)
-        saved_count = 0
+        saved = 0
         skipped = 0
 
-        for g in list(all_games.values())[:1200]:  # slightly more to compensate for skips
+        # Loop games (no API calls → super fast)
+        for g in list(all_games.values())[:1200]:
             appid = g.get("appid")
             name = g.get("name", "").strip()
 
-            # Skip entries missing required info
-            if not appid or not name or name.lower() in ["unknown", "app"]:
+            if not appid or not name:
                 skipped += 1
                 continue
 
-            # Build possible vertical image
-            image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{appid}/library_600x900.jpg"
+            # Primary tall library cover
+            cover = f"https://steamcdn-a.akamaihd.net/steam/apps/{appid}/library_600x900_2x.jpg"
 
-            # Heuristic: Steam images always exist unless game removed
-            # So skip apps with IDs under 10 or obviously invalid
-            if appid < 10:
-                skipped += 1
-                continue
+            # Always-available fallback (the header)
+            fallback_cover = f"https://steamcdn-a.akamaihd.net/steam/apps/{appid}/header.jpg"
 
             Game.objects.update_or_create(
                 appid=appid,
                 defaults={
                     "name": name,
                     "genre": g.get("genre", "Unknown"),
-                    "description": g.get("developer", ""),
-                    "image": image_url,
-                },
+                    "image": cover,
+                    "fallback_image": fallback_cover,
+                }
             )
-            saved_count += 1
 
-            if saved_count % 100 == 0:
-                self.stdout.write(f"💾 Saved {saved_count} games...")
+            saved += 1
+            if saved % 100 == 0:
+                self.stdout.write(f"💾 Saved {saved} games...")
 
-            if saved_count >= 1000:
+            if saved >= 1000:
                 break
 
-        self.stdout.write(self.style.SUCCESS(f"✅ Done! Saved {saved_count} games total."))
-        self.stdout.write(self.style.WARNING(f"🚫 Skipped {skipped} invalid or missing games."))
+        self.stdout.write(self.style.SUCCESS(f"✅ FAST UPDATE COMPLETE — {saved} games saved."))
+        self.stdout.write(self.style.WARNING(f"🚫 Skipped: {skipped} invalid items."))

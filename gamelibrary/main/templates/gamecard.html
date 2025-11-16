@@ -1,101 +1,96 @@
-{% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Game Detail - Open Book{% endblock %}
-
-{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/game-detail.css' %}">
-{% endblock %}
 
-{% block content %}
 <div class="book-overlay">
-    <div class="open-book">
-        <!-- Book spine -->
-        <div class="book-spine"></div>
+  <div class="open-book">
 
-        <!-- Left page -->
-        <div class="book-page-left">
-            <div class="page-lines"></div>
-            <img src="https://via.placeholder.com/400x500/3b2a20/f5e1c8?text=Game+Cover" 
-                 alt="Game Cover" 
-                 class="game-cover">
-            
-            <div class="screenshot-gallery">
-                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=1" 
-                     alt="Screenshot 1" 
-                     class="screenshot-thumb">
-                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=2" 
-                     alt="Screenshot 2" 
-                     class="screenshot-thumb">
-                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=3" 
-                     alt="Screenshot 3" 
-                     class="screenshot-thumb">
-            </div>
-        </div>
+    <!-- Spine -->
+    <div class="book-spine"></div>
 
-        <!-- Right page -->
-        <div class="book-page-right">
-            <div class="page-lines"></div>
-            
-            <!-- Close bookmark -->
-            <div class="close-bookmark" title="Close">×</div>
+    <!-- LEFT PAGE -->
+    <div class="book-page-left">
+      <div class="page-lines"></div>
 
-            <h1 class="game-title">The Legend of Zelda: Breath of the Wild</h1>
+      <!-- Game Cover -->
+      <img 
+        src="{{ game.image }}" 
+        alt="{{ game.name }}" 
+        class="game-cover"
+        onerror="this.onerror=null; this.src='{{ game.fallback_image }}';"
+      >
 
-            <div class="game-meta">
-                <span class="meta-badge">Action-Adventure</span>
-                <span class="meta-badge">Open World</span>
-                <span class="meta-badge">2017</span>
-            </div>
-
-            <div class="game-rating">
-                <span class="rating-stars">★★★★★</span>
-                <span>9.5/10</span>
-            </div>
-
-            <div class="game-description">
-                Step into a world of discovery, exploration, and adventure in The Legend of Zelda: 
-                Breath of the Wild, a boundary-breaking new game in the acclaimed series. Travel 
-                across vast fields, through forests, and to mountain peaks as you discover what has 
-                become of the kingdom of Hyrule in this stunning Open-Air Adventure.
-                <br><br>
-                Explore the wilds of Hyrule any way you like - climb up towers and mountain peaks 
-                in search of new destinations, then set your own path to get there and plunge into 
-                the wilderness. Along the way, you'll battle towering enemies, hunt wild beasts, and 
-                gather ingredients for the food and elixirs you'll need to sustain you on your journey.
-                <br><br>
-                More than 100 Shrines of Trials to discover and explore. Shrines dot the landscape, 
-                waiting to be discovered in any order you want. Search for them in various ways, and 
-                solve a variety of puzzles inside.
-            </div>
-
-            <div class="game-actions">
-                {% if request.session.user_id %}
-                    <button class="action-button">Add to Favorites ❤️</button>
-                    <button class="action-button secondary">Mark as Played ✓</button>
-                {% else %}
-                    <!-- Optional: prompt guest to log in -->
-                    <p><a href="{% url 'login' %}">Log in</a> to add to favorites or mark as played.</p>
-                {% endif %}
-            </div>
-
-        </div>
     </div>
+
+    <!-- RIGHT PAGE -->
+    <div class="book-page-right">
+      <div class="page-lines"></div>
+
+      <!-- Close button -->
+      <div class="close-bookmark" title="Close">×</div>
+
+      <!-- GAME TITLE -->
+      <h1 class="game-title">{{ game.name }}</h1>
+
+      <!-- META -->
+      <div class="game-meta">
+        <span class="meta-badge">{{ game.genre|default:"Unknown genre" }}</span>
+      </div>
+
+      <!-- DESCRIPTION -->
+      <div class="game-description">
+        {% if game.description %}
+          {{ game.description }}
+        {% else %}
+          No description available.
+        {% endif %}
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="game-actions">
+        {% if request.session.user_id %}
+          <button class="action-button">Add to Favorites ❤️</button>
+          <button class="action-button secondary">Mark as Played ✓</button>
+        {% else %}
+          <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-    // Close book when clicking bookmark
-    document.querySelector('.close-bookmark').addEventListener('click', function() {
-        window.location.href = "{% url 'index' %}";
-    });
+(function () {
+  document.body.classList.add('book-open');
 
-    // Close book when clicking outside the book
-    document.querySelector('.book-overlay').addEventListener('click', function(e) {
-        if (e.target === this) {
-            window.location.href = "{% url 'index' %}";
-        }
-    });
+  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+  if (scrollbarWidth > 0) {
+    document.body.style.paddingRight = scrollbarWidth + 'px';
+  }
+
+  const overlay = document.querySelector('.book-overlay');
+  if (overlay) {
+    overlay.offsetHeight;
+    overlay.classList.add('is-visible');
+  }
+
+  function cleanupAndGo(url) {
+    if (overlay) overlay.classList.remove('is-visible');
+    setTimeout(() => {
+      document.body.classList.remove('book-open');
+      document.body.style.paddingRight = '';
+      window.location.href = url;
+    }, 180);
+  }
+
+  document.querySelector('.close-bookmark').addEventListener('click', () => {
+    cleanupAndGo("{% url 'library' %}");
+  });
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      cleanupAndGo("{% url 'library' %}");
+    }
+  });
+})();
 </script>
-{% endblock %}

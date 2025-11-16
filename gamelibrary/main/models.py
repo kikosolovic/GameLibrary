@@ -1,7 +1,6 @@
 from django.db import models
 
-# Create your models here.
-GENRE_CHOICES =[
+GENRE_CHOICES = [
     ('action', 'Action'),
     ('adventure', 'Adventure'),
     ('rpg', 'RPG'),
@@ -25,12 +24,26 @@ class Users(models.Model):
     favourite_genre = models.CharField(max_length=100, choices=GENRE_CHOICES)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES)
 
+    def __str__(self):
+        return self.username
+
+
 class Game(models.Model):
     appid = models.IntegerField(unique=True)
     name = models.CharField(max_length=255)
-    genre = models.CharField(max_length=255, blank=True, null=True)
+
+    # Steam metadata
+    genre = models.CharField(max_length=255, blank=True, null=True, default="Unknown")
+    release_date = models.CharField(max_length=200, blank=True, null=True)
+
+    # Media
     image = models.URLField(blank=True, null=True)
+    screenshots = models.JSONField(default=list, blank=True)
+    fallback_image = models.URLField(blank=True, null=True)
+
+    # Text
     description = models.TextField(blank=True, null=True)
+    detailed_description = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return self.name

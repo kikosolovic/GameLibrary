@@ -34,7 +34,7 @@ body {
   top: 0;
   left: 0;
   height: 100vh;
-  width: 220px;   
+  width: 220px;
   border-right: 3px solid #2d1b12;
   z-index: 10;
 }
@@ -74,10 +74,10 @@ body {
 
 .user-row {
   display: flex;
-  flex-direction: row;  
-  align-items: center;   
-  gap: 0.5rem;           
-  margin-top: auto;      
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: auto;
 }
 
 /* User image */
@@ -94,21 +94,21 @@ body {
   padding: 0.6rem 1.2rem;
   border-radius: 6px;
   cursor: pointer;
-  background-color: rgba(60, 40, 25, 0.9); 
-  color: #f5e1c8;  
-  border: none;    
+  background-color: rgba(60, 40, 25, 0.9);
+  color: #f5e1c8;
+  border: none;
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-.shelf-button-logout:hover { 
-  background: #afa9a8; 
-  color: #2d1b12; 
+.shelf-button-logout:hover {
+  background: #afa9a8;
+  color: #2d1b12;
 }
 
 /* Shelves (main area starts after sidebar) */
 .library-content {
   flex: 1;
-  margin-left: 220px; /* ✅ leave space for sidebar */
+  margin-left: 220px;
   padding: 2rem;
   display: flex;
   flex-direction: column;
@@ -134,7 +134,7 @@ body {
   justify-content: flex-start;
 }
 
-/* === Game Cards Hover Effect === */
+/* === Game Cards === */
 .game-card {
   position: relative;
   display: inline-block;
@@ -143,15 +143,19 @@ body {
   flex: 0 0 auto;
 }
 
+.game-title-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 .game-card:hover {
   transform: scale(1.06);
 }
 
-/* ✅ Proper vertical ratio */
 .game-card-cover {
   width: 155px;
   height: 250px;
-  object-fit: cover; /* keeps full cover visible */
+  object-fit: cover;
   border-radius: 8px;
   border: 2px solid #2d1b12;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
@@ -178,7 +182,6 @@ body {
   opacity: 1;
 }
 
-/* Game title */
 .game-overlay .game-title {
   color: #f5e1c8;
   font-weight: bold;
@@ -188,102 +191,231 @@ body {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
-.no-games {
-  padding: 2rem;
-  text-align: center;
-  font-style: italic;
-  color: #f5e1c8;
-}
-
-
-
-/* === Custom horizontal scrollbar === */
+/* === Scrollbar === */
 .shelf::-webkit-scrollbar {
-  height: 12px;                  /* scrollbar thickness */
+  height: 12px;
 }
-
 .shelf::-webkit-scrollbar-track {
-  background: rgba(43, 25, 15, 0.9);  /* dark wood tone track */
+  background: rgba(43, 25, 15, 0.9);
   border-radius: 10px;
   box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
 }
-
 .shelf::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #c38b52, #7a4a24);
   border-radius: 10px;
   border: 2px solid #2d1b12;
   box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
-  transition: background 0.3s ease;
 }
-
 .shelf::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #e1b372, #9b5e31);
 }
-
-/* Optional: subtle scrollbar for vertical page scroll */
 .library-content::-webkit-scrollbar {
   width: 10px;
 }
-
 .library-content::-webkit-scrollbar-thumb {
   background: rgba(160, 101, 60, 0.8);
   border-radius: 6px;
 }
-
 .library-content::-webkit-scrollbar-thumb:hover {
   background: rgba(192, 120, 69, 1);
 }
-
-/* Firefox support (uses different selectors) */
 .shelf {
   scrollbar-color: #a0653c rgba(43, 25, 15, 0.9);
   scrollbar-width: thin;
 }
-.profile-link {
-    display: inline-block;
-    text-decoration: none;
-    transition: transform 0.2s ease;
+
+/* === Overlay + Book === */
+body.book-open {
+  overflow: hidden;
 }
 
-.profile-link:hover {
-    transform: scale(1.1);
+.book-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.4s ease, backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease;
 }
 
-/* Ensure the username-picture div works properly inside the link */
-.profile-link .username-picture {
-    cursor: pointer;
+.book-overlay.is-visible {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.profile-link .username-picture img {
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+.open-book {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  background: #f5e1c8;
+  border-radius: 10px;
+  width: 900px;
+  height: 550px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  transform-origin: center center;
+  animation: openBookCenter 0.9s ease forwards;
+  perspective: 2000px;
 }
 
-.profile-link:hover .username-picture img {
-    box-shadow: 0 0 10px rgba(160, 101, 60, 0.5);
-    border-color: #c07845;
-}
-
-.profile-link {
-    position: relative;
-}
-
-.profile-link::after {
-    content: "View Profile";
-    position: absolute;
-    bottom: -25px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(59, 42, 32, 0.9);
-    color: #f5e1c8;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    white-space: nowrap;
+@keyframes openBookCenter {
+  0% {
+    transform: scale(0.9) rotateY(-75deg);
     opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
+  }
+  60% {
+    transform: scale(1.03) rotateY(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotateY(0deg);
+    opacity: 1;
+  }
 }
 
-.profile-link:hover::after {
-    opacity: 1;
+/* === Page styles (same as before) === */
+.book-spine {
+  width: 25px;
+  background: linear-gradient(to right, #2d1b12, #4a3020);
+  box-shadow: inset -5px 0 8px rgba(0, 0, 0, 0.6);
+}
+.book-page-left,
+.book-page-right {
+  flex: 1;
+  padding: 2rem;
+  background: #f5e1c8;
+  position: relative;
+  overflow-y: auto;
+  color: #3b2a20;
+  font-family: "Georgia", serif;
+}
+.page-lines::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05) 0px,
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 24px
+  );
+  pointer-events: none;
+}
+.book-page-left {
+  border-right: 2px solid #d4b790;
+  box-shadow: inset -4px 0 8px rgba(0, 0, 0, 0.1);
+}
+.game-cover {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+.screenshot-gallery {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.screenshot-thumb {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+}
+.screenshot-thumb:hover {
+  transform: scale(1.1);
+}
+.book-page-right {
+  padding: 2rem 2.5rem;
+}
+.close-bookmark {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: #3b2a20;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.3s ease;
+  z-index: 10;
+}
+.close-bookmark:hover {
+  transform: scale(1.2);
+  color: #a0653c;
+}
+.game-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+.game-meta {
+  margin-bottom: 1rem;
+}
+.meta-badge {
+  background: #a0653c;
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  margin-right: 0.4rem;
+}
+.game-rating {
+  margin: 1rem 0;
+  font-size: 1.1rem;
+}
+.rating-stars {
+  color: #e1b372;
+  font-size: 1.2rem;
+}
+.game-description {
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-top: 1rem;
+}
+.game-actions {
+  margin-top: 1.5rem;
+}
+.action-button {
+  background: #a0653c;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-right: 0.5rem;
+  transition: background 0.3s ease;
+}
+.action-button:hover {
+  background: #c07845;
+}
+.action-button.secondary {
+  background: #6b4a32;
+}
+body.book-open .library-content,
+body.book-open .library-header {
+  filter: blur(6px) brightness(0.45);
+  pointer-events: none;
+  transition: filter 0.35s ease;   /* 🔹 smooth blur */
+}
+.library-content,
+.library-header {
+  transition: filter 0.35s ease;   /* 🔹 starting state */
+}
+/* Prevent page shift when overlay opens */
+body.book-open {
+  overflow: hidden;   /* ✅ keep this */
+  /* ❌ remove padding-right override so JS can control it */
 }
