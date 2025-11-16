@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+<link rel="stylesheet" href="{% static 'css/search-autocomplete.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -12,12 +13,11 @@
     <!-- Header with controls -->
     <header class="library-header">
         <div class="search-bar">
-            <input type="text" placeholder="Search...">
+            <input type="text" placeholder="Search..." autocomplete="off">
         </div>
 
-        <div class="shelf-button">Algo</div>
-        <div class="shelf-button">Filter</div>
-        <div class="shelf-button">...</div>
+        <div class="shelf-button" onclick="window.location.href='{% url 'index' %}'"> Home</div>
+        <div class="shelf-button"> Filter</div>
 
         <div class="user-row">
         {% if request.session.user_id %}
@@ -26,9 +26,11 @@
                 {% csrf_token %}
                 <button type="submit" class="shelf-button-logout">Log out</button>
             </form>
-            <div class="username-picture">
-                <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
-            </div>
+            <a href="{% url 'profile' %}" class="profile-link" title="View Profile">
+                <div class="username-picture">
+                    <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
+                </div>
+            </a>
     {% else %}
         <!-- Guest -->
         <a href="{% url 'login' %}" class="shelf-button-logout">Log in</a>
@@ -54,4 +56,8 @@
         <div class="shelf"></div>
     </main>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/search-autocomplete.js' %}"></script>
 {% endblock %}
