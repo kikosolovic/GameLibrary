@@ -20,6 +20,5 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', lambda request: redirect('library')),  # 👈 redirect homepage to /library/
-    path('', include('main.urls')),
+    path('', include('main.urls')),  # main handles homepage
 ]
