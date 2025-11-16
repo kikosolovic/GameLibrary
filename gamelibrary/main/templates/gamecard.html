@@ -11,14 +11,38 @@
     <div class="book-page-left">
       <div class="page-lines"></div>
 
-      <!-- Game Cover -->
+      <!-- Main image with ID for JS -->
       <img 
-        src="{{ game.image }}" 
+        id="mainCover"
+        src="{% if game.screenshots and game.screenshots.0.path_full %}{{ game.screenshots.0.path_full }}{% else %}{{ game.image }}{% endif %}" 
         alt="{{ game.name }}" 
         class="game-cover"
         onerror="this.onerror=null; this.src='{{ game.fallback_image }}';"
       >
 
+      <!-- Screenshot thumbnails -->
+      {% if game.screenshots %}
+      <div class="screenshot-gallery">
+        {% for shot in game.screenshots|slice:":6" %}
+          <img 
+            src="{{ shot.path_thumbnail }}" 
+            data-full="{{ shot.path_full }}"
+            alt="Screenshot {{ forloop.counter }}"
+            class="screenshot-thumb"
+          >
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Trailer -->
+      {% if game.trailer_url %}
+      <div class="trailer-container">
+        <h3 class="section-title">Trailer</h3>
+        <video class="trailer-video" controls>
+          <source src="{{ game.trailer_url }}" type="video/mp4">
+        </video>
+      </div>
+      {% endif %}
     </div>
 
     <!-- RIGHT PAGE -->
@@ -33,17 +57,111 @@
 
       <!-- META -->
       <div class="game-meta">
-        <span class="meta-badge">{{ game.genre|default:"Unknown genre" }}</span>
+        {% if game.genre %}
+          <span class="meta-badge">{{ game.genre }}</span>
+        {% endif %}
+
+        {% if game.release_date %}
+          <span class="meta-badge meta-neutral">Released: {{ game.release_date }}</span>
+        {% endif %}
+
+        {% if game.price %}
+          <span class="meta-badge meta-price">
+            {{ game.price }}
+            {% if game.discount and game.discount > 0 %}
+              <span class="discount-badge">-{{ game.discount }}%</span>
+            {% endif %}
+          </span>
+        {% endif %}
       </div>
 
-      <!-- DESCRIPTION -->
+      <!-- Platforms -->
+      {% if game.platforms %}
+      <div class="platforms-list">
+        {% with p=game.platforms %}
+          <span class="platform-pill {% if not p.windows %}disabled{% endif %}">Windows</span>
+          <span class="platform-pill {% if not p.mac %}disabled{% endif %}">Mac</span>
+          <span class="platform-pill {% if not p.linux %}disabled{% endif %}">Linux</span>
+        {% endwith %}
+      </div>
+      {% endif %}
+
+      <!-- Developers / Publishers -->
+      <div class="meta-section">
+        {% if game.developers %}
+          <div><span class="meta-label">Developer:</span> {{ game.developers|join:", " }}</div>
+        {% endif %}
+        {% if game.publishers %}
+          <div><span class="meta-label">Publisher:</span> {{ game.publishers|join:", " }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Tags -->
+      {% if game.categories %}
+      <div class="tags-container">
+        {% for tag in game.categories %}
+          <span class="tag-badge">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Short Description -->
       <div class="game-description">
         {% if game.description %}
-          {{ game.description }}
+          {{ game.description|safe }}
         {% else %}
           No description available.
         {% endif %}
       </div>
+
+      <!-- Long Description -->
+      {% if game.long_description %}
+      <details class="long-description">
+        <summary>Read more about this game</summary>
+        <div class="long-description-body">
+          {{ game.long_description|safe }}
+        </div>
+      </details>
+      {% endif %}
+
+      <!-- System Requirements -->
+      {% if game.pc_requirements or game.mac_requirements or game.linux_requirements %}
+      <div class="requirements-section">
+        <h3 class="section-title">System Requirements</h3>
+
+        {% if game.pc_requirements %}
+        <details>
+          <summary>PC</summary>
+          <div class="requirements-body">
+            {{ game.pc_requirements|safe }}
+            {% if game.pc_recommend %}
+              <hr>
+              <strong>Recommended:</strong><br>
+              {{ game.pc_recommend|safe }}
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if game.mac_requirements %}
+        <details>
+          <summary>Mac</summary>
+          <div class="requirements-body">
+            {{ game.mac_requirements|safe }}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if game.linux_requirements %}
+        <details>
+          <summary>Linux</summary>
+          <div class="requirements-body">
+            {{ game.linux_requirements|safe }}
+          </div>
+        </details>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <!-- ACTIONS -->
       <div class="game-actions">
@@ -54,25 +172,18 @@
           <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
         {% endif %}
       </div>
-    </div>
 
+    </div>
   </div>
 </div>
 
+<!-- Screenshot switching JS -->
 <script>
 (function () {
   document.body.classList.add('book-open');
 
-  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-  if (scrollbarWidth > 0) {
-    document.body.style.paddingRight = scrollbarWidth + 'px';
-  }
-
   const overlay = document.querySelector('.book-overlay');
-  if (overlay) {
-    overlay.offsetHeight;
-    overlay.classList.add('is-visible');
-  }
+  const closeBtn = document.querySelector('.close-bookmark');
 
   function cleanupAndGo(url) {
     if (overlay) overlay.classList.remove('is-visible');
@@ -83,14 +194,38 @@
     }, 180);
   }
 
-  document.querySelector('.close-bookmark').addEventListener('click', () => {
-    cleanupAndGo("{% url 'library' %}");
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      cleanupAndGo("{% url 'library' %}");
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        cleanupAndGo("{% url 'library' %}");
+      }
+    });
+  }
+
+  /* -------------------------------
+       SCREENSHOT CLICK → SWITCH IMAGE
+  --------------------------------- */
+  const mainCover = document.getElementById("mainCover");
+  const originalCover = mainCover.src;
+  const thumbs = document.querySelectorAll(".screenshot-thumb");
+
+  thumbs.forEach(thumb => {
+    thumb.addEventListener("click", () => {
+      const full = thumb.dataset.full;
+      if (full) mainCover.src = full;
+    });
   });
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) {
-      cleanupAndGo("{% url 'library' %}");
-    }
+  // Optional: clicking the main cover restores the original
+  mainCover.addEventListener("click", () => {
+    mainCover.src = originalCover;
   });
+
 })();
 </script>

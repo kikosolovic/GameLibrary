@@ -1,3 +1,6 @@
+/* -----------------------------------------
+   GLOBAL STYLING
+----------------------------------------- */
 
 body {
   font-family: "Georgia", serif;
@@ -13,7 +16,10 @@ body {
   margin: 0;
 }
 
-/* Overlay background */
+/* -----------------------------------------
+   OVERLAY BACKGROUND
+----------------------------------------- */
+
 .book-overlay {
   position: fixed;
   top: 0;
@@ -34,7 +40,10 @@ body {
   }
 }
 
-/* Open book container */
+/* -----------------------------------------
+   OPEN BOOK LAYOUT
+----------------------------------------- */
+
 .open-book {
   width: 90%;
   max-width: 1200px;
@@ -64,20 +73,26 @@ body {
   }
 }
 
-/* Left page (cover/image) */
+/* -----------------------------------------
+   LEFT PAGE (Cover + screenshots)
+----------------------------------------- */
+
 .book-page-left {
   flex: 1;
   background: linear-gradient(to right, #e8d4b8 0%, #f5e1c8 100%);
   border-right: 3px solid #d4b896;
-  padding: 40px;
+  padding: 25px 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   position: relative;
   box-shadow: inset -5px 0 15px rgba(0, 0, 0, 0.1);
   transform-origin: right center;
   animation: openLeftPage 1s ease-out 0.3s backwards;
+  overflow-y: auto;
+  justify-content: flex-start;
+  gap: 12px;    /* consistent spacing between cover → screenshots */
 }
 
 @keyframes openLeftPage {
@@ -89,22 +104,48 @@ body {
   }
 }
 
+/* --- COVER IMAGE (Improved) --- */
+
 .game-cover {
-  width: 100%;
-  max-width: 400px;
-  height: auto;
+  width: 95%;
+  max-width: 480px;
+  max-height: 60vh;
+  object-fit: contain;
   border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  margin-bottom: 20px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+  margin-bottom: 35px !important;
   animation: fadeInContent 0.6s ease-out 1s backwards;
+  display: block;
 }
+
+/* --- Screenshots (improved, grid layout) --- */
 
 .screenshot-gallery {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  animation: fadeInContent 0.6s ease-out 1.2s backwards;
+  flex-wrap: wrap;             /* allow multiple rows */
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 0 20px 0;
 }
+
+.screenshot-thumb {
+  width: 110px;                /* bigger thumbnails */
+  height: 70px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid #d4b896;
+  transition: transform 0.2s, border-color 0.2s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.screenshot-thumb:hover {
+  transform: scale(1.12);
+  border-color: #a0653c;
+}
+
 
 @keyframes fadeInContent {
   0% {
@@ -117,22 +158,10 @@ body {
   }
 }
 
-.screenshot-thumb {
-  width: 80px;
-  height: 60px;
-  border-radius: 4px;
-  object-fit: cover;
-  cursor: pointer;
-  border: 2px solid #d4b896;
-  transition: transform 0.2s;
-}
+/* -----------------------------------------
+   RIGHT PAGE (Details)
+----------------------------------------- */
 
-.screenshot-thumb:hover {
-  transform: scale(1.1);
-  border-color: #a0653c;
-}
-
-/* Right page (info) */
 .book-page-right {
   flex: 1;
   background: linear-gradient(to left, #e8d4b8 0%, #f5e1c8 100%);
@@ -152,6 +181,8 @@ body {
     transform: rotateY(0deg);
   }
 }
+
+/* --- Titles & Meta --- */
 
 .game-title {
   font-size: 2.5rem;
@@ -182,21 +213,67 @@ body {
   font-weight: bold;
 }
 
-.game-rating {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 20px 0;
-  font-size: 1.2rem;
-  color: #3b2a20;
-  animation: fadeInContent 0.6s ease-out 1.2s backwards;
+/* --- Pricing --- */
+
+.meta-badge.meta-price {
+  background: #3b6b3b;
 }
 
-.rating-stars {
-  color: #d4af37;
-  font-size: 1.5rem;
+.meta-badge.meta-neutral {
+  background: #6b4423;
 }
+
+.discount-badge {
+  margin-left: 6px;
+  background: #c74444;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+/* --- Tags --- */
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.tag-badge {
+  background: #d4b896;
+  color: #3b2a20;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* --- Platform Pills --- */
+
+.platforms-list {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.platform-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #a0653c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3b2a20;
+  background: rgba(255,255,255,0.4);
+}
+
+.platform-pill.disabled {
+  opacity: 0.3;
+}
+
+/* --- Description --- */
 
 .game-description {
   color: #3b2a20;
@@ -206,6 +283,64 @@ body {
   font-size: 1rem;
   animation: fadeInContent 0.6s ease-out 1.3s backwards;
 }
+
+/* --- Long Description (Collapsible) --- */
+
+.long-description {
+  margin-bottom: 20px;
+}
+
+.long-description > summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #a0653c;
+}
+
+.long-description-body {
+  margin-top: 10px;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+/* --- System Requirements --- */
+
+.requirements-section {
+  margin-bottom: 25px;
+}
+
+.requirements-section details {
+  margin-top: 8px;
+}
+
+.requirements-section summary {
+  cursor: pointer;
+  font-weight: bold;
+  color: #6b4423;
+}
+
+.requirements-body {
+  margin-top: 6px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* --- Trailer --- */
+
+.trailer-container {
+  width: 100%;
+  margin-top: 20px;
+  animation: fadeInContent 0.6s ease-out 1.3s backwards;
+}
+
+.trailer-video {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+/* -----------------------------------------
+   ACTION BUTTONS
+----------------------------------------- */
 
 .game-actions {
   display: flex;
@@ -240,7 +375,10 @@ body {
   background: #8a5a2e;
 }
 
-/* Close button (bookmark ribbon) */
+/* -----------------------------------------
+   BOOKMARK CLOSE BUTTON
+----------------------------------------- */
+
 .close-bookmark {
   position: absolute;
   top: 0;
@@ -276,7 +414,10 @@ body {
   background: #a03333;
 }
 
-/* Book spine in center */
+/* -----------------------------------------
+   BOOK SPINE & PAGE LINES
+----------------------------------------- */
+
 .book-spine {
   position: absolute;
   left: 50%;
@@ -288,7 +429,6 @@ body {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Page lines decoration */
 .page-lines {
   position: absolute;
   top: 0;
