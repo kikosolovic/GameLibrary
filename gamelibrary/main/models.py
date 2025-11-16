@@ -24,3 +24,13 @@ class Users(models.Model):
     password = models.CharField(max_length=256)
     favourite_genre = models.CharField(max_length=100, choices=GENRE_CHOICES)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES)
+
+class Game(models.Model):
+    appid = models.IntegerField(unique=True)
+    name = models.CharField(max_length=255)
+    genre = models.CharField(max_length=255, blank=True, null=True)
+    image = models.URLField(blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name

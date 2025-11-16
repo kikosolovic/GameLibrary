@@ -12,16 +12,16 @@ body {
   overflow-x: hidden;
 }
 
-/* Background with bookshelf */
+/* Background */
 .library-background {
   min-height: 100vh;
   background: url('../images/background.png') no-repeat center center fixed;
-  background-size:  cover;
+  background-size: cover;
   display: flex;
   flex-direction: column;
 }
 
-/* Header area */
+/* Sidebar header */
 .library-header {
   display: flex;
   flex-direction: column;
@@ -42,8 +42,6 @@ body {
 /* Search bar */
 .search-bar {
   margin-top: 1rem;
-  /* flex-grow: 1; */
-  justify-content: flex-end;
 }
 
 .search-bar input {
@@ -56,7 +54,7 @@ body {
   font-size: 1rem;
 }
 
-/* Book spine-style buttons */
+/* Sidebar buttons */
 .shelf-button {
   background: #a0653c;
   color: #fff;
@@ -82,15 +80,15 @@ body {
   margin-top: auto;      
 }
 
-/* Imagen del usuario */
+/* User image */
 .username-picture img {
   width: 75px;
   height: 75px;
   border-radius: 50%;
-  object-fit: cover;     /* centers imag*/
+  object-fit: cover;
 }
 
-/* fixes button inside container*/
+/* Logout button */
 .shelf-button-logout {
   width: 90px;
   padding: 0.6rem 1.2rem;
@@ -107,23 +105,139 @@ body {
   color: #2d1b12; 
 }
 
-/* Shelves for games */
+/* Shelves (main area starts after sidebar) */
 .library-content {
   flex: 1;
-  overflow-y: auto;
-  margin-left: 220px;
+  margin-left: 220px; /* ✅ leave space for sidebar */
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 1.5rem;
+  overflow-y: auto;
 }
 
+/* Shelf styling */
 .shelf {
-  height: 260px;
+  height: 300px;
+  width: 100%;
   background: rgba(60, 40, 25, 0.7);
   border: 3px solid #2d1b12;
   border-radius: 10px;
-  box-shadow: inset 0 5px 15px rgba(0,0,0,0.4);
+  box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 1.2rem;
+  padding: 1rem;
+  scroll-behavior: smooth;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* === Game Cards Hover Effect === */
+.game-card {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  transition: transform 0.25s ease;
+  flex: 0 0 auto;
+}
+
+.game-card:hover {
+  transform: scale(1.06);
+}
+
+/* ✅ Proper vertical ratio */
+.game-card-cover {
+  width: 155px;
+  height: 250px;
+  object-fit: cover; /* keeps full cover visible */
+  border-radius: 8px;
+  border: 2px solid #2d1b12;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  background-color: #1a0f07;
+}
+
+/* Hover overlay */
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 10, 5, 0.85);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-card:hover .game-overlay {
+  opacity: 1;
+}
+
+/* Game title */
+.game-overlay .game-title {
+  color: #f5e1c8;
+  font-weight: bold;
+  text-align: center;
+  font-size: 0.95rem;
+  padding: 0.5rem;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+}
+
+.no-games {
+  padding: 2rem;
+  text-align: center;
+  font-style: italic;
+  color: #f5e1c8;
+}
+
+
+
+/* === Custom horizontal scrollbar === */
+.shelf::-webkit-scrollbar {
+  height: 12px;                  /* scrollbar thickness */
+}
+
+.shelf::-webkit-scrollbar-track {
+  background: rgba(43, 25, 15, 0.9);  /* dark wood tone track */
+  border-radius: 10px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.shelf::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c38b52, #7a4a24);
+  border-radius: 10px;
+  border: 2px solid #2d1b12;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.6);
+  transition: background 0.3s ease;
+}
+
+.shelf::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #e1b372, #9b5e31);
+}
+
+/* Optional: subtle scrollbar for vertical page scroll */
+.library-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.library-content::-webkit-scrollbar-thumb {
+  background: rgba(160, 101, 60, 0.8);
+  border-radius: 6px;
+}
+
+.library-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(192, 120, 69, 1);
+}
+
+/* Firefox support (uses different selectors) */
+.shelf {
+  scrollbar-color: #a0653c rgba(43, 25, 15, 0.9);
+  scrollbar-width: thin;
 }
 .profile-link {
     display: inline-block;

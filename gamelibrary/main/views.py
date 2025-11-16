@@ -8,8 +8,17 @@ import json
 from .forms import RegistrationForm, LoginForm
 from .models import Users
 
-def index(request):
-    return render(request, 'index.html')
+from django.shortcuts import render
+from .models import Game
+from main.models import Game
+
+
+# Create your views here.
+
+def library_view(request):
+    games = Game.objects.all()[:75]  # limit total to 75 games
+    shelves = [games[i:i+15] for i in range(0, len(games), 15)]  # 15 games per shelf
+    return render(request, 'library.html', {'shelves': shelves})
 
 def login_view(request):
     form = LoginForm()
