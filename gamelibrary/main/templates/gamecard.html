@@ -11,7 +11,7 @@
     <div class="book-page-left">
       <div class="page-lines"></div>
 
-      <!-- Main image with ID for JS -->
+      <!-- Main image -->
       <img 
         id="mainCover"
         src="{% if game.screenshots and game.screenshots.0.path_full %}{{ game.screenshots.0.path_full }}{% else %}{{ game.image }}{% endif %}" 
@@ -20,7 +20,6 @@
         onerror="this.onerror=null; this.src='{{ game.fallback_image }}';"
       >
 
-      <!-- Screenshot thumbnails -->
       {% if game.screenshots %}
       <div class="screenshot-gallery">
         {% for shot in game.screenshots|slice:":6" %}
@@ -34,7 +33,6 @@
       </div>
       {% endif %}
 
-      <!-- Trailer -->
       {% if game.trailer_url %}
       <div class="trailer-container">
         <h3 class="section-title">Trailer</h3>
@@ -49,22 +47,17 @@
     <div class="book-page-right">
       <div class="page-lines"></div>
 
-      <!-- Close button -->
       <div class="close-bookmark" title="Close">×</div>
 
-      <!-- GAME TITLE -->
       <h1 class="game-title">{{ game.name }}</h1>
 
-      <!-- META -->
       <div class="game-meta">
         {% if game.genre %}
           <span class="meta-badge">{{ game.genre }}</span>
         {% endif %}
-
         {% if game.release_date %}
           <span class="meta-badge meta-neutral">Released: {{ game.release_date }}</span>
         {% endif %}
-
         {% if game.price %}
           <span class="meta-badge meta-price">
             {{ game.price }}
@@ -75,7 +68,6 @@
         {% endif %}
       </div>
 
-      <!-- Platforms -->
       {% if game.platforms %}
       <div class="platforms-list">
         {% with p=game.platforms %}
@@ -86,7 +78,6 @@
       </div>
       {% endif %}
 
-      <!-- Developers / Publishers -->
       <div class="meta-section">
         {% if game.developers %}
           <div><span class="meta-label">Developer:</span> {{ game.developers|join:", " }}</div>
@@ -96,7 +87,6 @@
         {% endif %}
       </div>
 
-      <!-- Tags -->
       {% if game.categories %}
       <div class="tags-container">
         {% for tag in game.categories %}
@@ -105,7 +95,6 @@
       </div>
       {% endif %}
 
-      <!-- Short Description -->
       <div class="game-description">
         {% if game.description %}
           {{ game.description|safe }}
@@ -114,7 +103,6 @@
         {% endif %}
       </div>
 
-      <!-- Long Description -->
       {% if game.long_description %}
       <details class="long-description">
         <summary>Read more about this game</summary>
@@ -124,11 +112,9 @@
       </details>
       {% endif %}
 
-      <!-- System Requirements -->
       {% if game.pc_requirements or game.mac_requirements or game.linux_requirements %}
       <div class="requirements-section">
         <h3 class="section-title">System Requirements</h3>
-
         {% if game.pc_requirements %}
         <details>
           <summary>PC</summary>
@@ -163,13 +149,12 @@
       </div>
       {% endif %}
 
-      <!-- ACTIONS -->
       <div class="game-actions">
         {% if request.session.user_id %}
-          <button class="action-button">Add to Favorites ❤️</button>
-          <button class="action-button secondary">Mark as Played ✓</button>
+            <button id="btnFavorite" class="action-button">Add to Favorites ❤️</button>
+            <button id="btnPlayed" class="action-button secondary">Mark as Played ✓</button>
         {% else %}
-          <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
+            <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
         {% endif %}
       </div>
 
@@ -177,55 +162,102 @@
   </div>
 </div>
 
-<!-- Screenshot switching JS -->
+
+<!-- ========== SCRIPT 1: BOOK + IMAGES ========== -->
 <script>
 (function () {
-  document.body.classList.add('book-open');
 
-  const overlay = document.querySelector('.book-overlay');
-  const closeBtn = document.querySelector('.close-bookmark');
+    document.body.classList.add('book-open');
 
-  function cleanupAndGo(url) {
-    if (overlay) overlay.classList.remove('is-visible');
-    setTimeout(() => {
-      document.body.classList.remove('book-open');
-      document.body.style.paddingRight = '';
-      window.location.href = url;
-    }, 180);
-  }
+    const overlay = document.querySelector('.book-overlay');
+    const book = document.querySelector('.open-book');
+    const closeBtn = document.querySelector('.close-bookmark');
 
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      cleanupAndGo("{% url 'library' %}");
+    function closeBook() {
+        book.style.transition = "opacity 0.35s ease";
+        book.style.opacity = "0";
+
+        overlay.style.transition = "opacity 0.35s ease";
+        overlay.style.opacity = "0";
+
+        setTimeout(() => {
+            window.location.href = "{% url 'library' %}";
+        }, 350);
+    }
+
+    closeBtn.addEventListener("click", closeBook);
+
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeBook();
     });
-  }
 
-  if (overlay) {
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
-        cleanupAndGo("{% url 'library' %}");
-      }
+    const mainCover = document.getElementById("mainCover");
+    const thumbs = document.querySelectorAll(".screenshot-thumb");
+    const originalCover = mainCover.src;
+
+    thumbs.forEach(t => {
+        const img = new Image();
+        img.src = t.dataset.full;
     });
-  }
 
-  /* -------------------------------
-       SCREENSHOT CLICK → SWITCH IMAGE
-  --------------------------------- */
-  const mainCover = document.getElementById("mainCover");
-  const originalCover = mainCover.src;
-  const thumbs = document.querySelectorAll(".screenshot-thumb");
-
-  thumbs.forEach(thumb => {
-    thumb.addEventListener("click", () => {
-      const full = thumb.dataset.full;
-      if (full) mainCover.src = full;
+    thumbs.forEach(thumb => {
+        thumb.addEventListener("click", () => {
+            mainCover.src = thumb.dataset.full;
+        });
     });
-  });
 
-  // Optional: clicking the main cover restores the original
-  mainCover.addEventListener("click", () => {
-    mainCover.src = originalCover;
-  });
+    mainCover.addEventListener("click", () => {
+        mainCover.src = originalCover;
+    });
 
 })();
 </script>
+
+
+<!-- ========== SCRIPT 2: FAVORITES + PLAYED ========== -->
+<script>
+const btnFav = document.getElementById("btnFavorite");
+const btnPlayed = document.getElementById("btnPlayed");
+
+function postJSON(url, data) {
+    return fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: JSON.stringify(data)
+    }).then(r => r.json());
+}
+
+btnFav?.addEventListener("click", () => {
+    postJSON("/api/add-favorite/", {
+        game_id: "{{ game.appid }}",          // FIXED
+        title: "{{ game.name|escapejs }}",    // FIXED
+        cover: "{{ game.image }}",            // FIXED
+        genre: "{{ game.genre }}",
+        year: "{{ game.release_date }}",
+    }).then(res => {
+        if (res.success) {
+            btnFav.textContent = "Added ✓";
+            btnFav.style.opacity = "0.6";
+        }
+    });
+});
+
+btnPlayed?.addEventListener("click", () => {
+    postJSON("/api/add-played/", {
+        game_id: "{{ game.appid }}",          // FIXED
+        title: "{{ game.name|escapejs }}",    // FIXED
+        cover: "{{ game.image }}",
+        genre: "{{ game.genre }}",
+        year: "{{ game.release_date }}",
+    }).then(res => {
+        if (res.success) {
+            btnPlayed.textContent = "Marked ✓";
+            btnPlayed.style.opacity = "0.6";
+        }
+    });
+});
+</script>
+

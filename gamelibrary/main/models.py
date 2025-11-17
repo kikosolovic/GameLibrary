@@ -28,6 +28,22 @@ class Users(models.Model):
     def __str__(self):
         return self.username
 
+class FavoriteGame(models.Model):
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    game_id = models.CharField(max_length=100)  
+    title = models.CharField(max_length=200)
+    cover = models.CharField(max_length=500)
+    genre = models.CharField(max_length=100, null=True)
+    year = models.CharField(max_length=20, null=True)
+
+class PlayedGame(models.Model):
+    user = models.ForeignKey(Users, on_delete=models.CASCADE)
+    game_id = models.CharField(max_length=100)
+    title = models.CharField(max_length=200)
+    cover = models.CharField(max_length=500)
+    genre = models.CharField(max_length=100, null=True)
+    year = models.CharField(max_length=20, null=True)
+
 
 class Game(models.Model):
     appid = models.IntegerField(unique=True)

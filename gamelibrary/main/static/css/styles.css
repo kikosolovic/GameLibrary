@@ -17,7 +17,7 @@ body {
     min-height: 100vh;
     background: url('../images/background.png') no-repeat center center fixed;
     background-size: cover;
-
+    margin-left: 220px !important;
     display: flex !important;
     flex-direction: row !important;   /* sidebar left, content right */
     position: relative !important;
@@ -31,11 +31,21 @@ body {
   flex-direction: column;
   padding: 1rem;
   gap: 1rem;
-  width: 220px;
-  background-color: rgba(60, 40, 25, 0.9);
+  width: 230px;
+
   border-right: 3px solid #2d1b12;
-  position: relative !important;   /* IMPORTANTE: NO fixed */
-  z-index: 10;
+
+  /* 🔥 Sidebar — now slightly transparent */
+  background-color: rgba(60, 40, 25, 0.65) !important;
+  backdrop-filter: blur(3px);
+
+  /* 🔥 Keep sidebar fixed */
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 5000 !important;
 }
 
 
@@ -107,8 +117,6 @@ body {
 
 /* Shelves (main area starts after sidebar) */
 .library-content {
-    flex: 1;
-    margin-left: 0 !important;
     padding: 2rem;
     display: flex;
     flex-direction: column;
@@ -404,12 +412,7 @@ body.book-open {
 .action-button.secondary {
   background: #6b4a32;
 }
-body.book-open .library-content,
-body.book-open .library-header {
-  filter: blur(6px) brightness(0.45);
-  pointer-events: none;
-  transition: filter 0.35s ease;   /* 🔹 smooth blur */
-}
+
 .library-content,
 .library-header {
   transition: filter 0.35s ease;   /* 🔹 starting state */
@@ -612,4 +615,12 @@ body.book-open {
 .smooth-refresh.show {
     opacity: 1;
     transform: translateY(0);
+}
+/* NEW: fade out UI when book opens */
+body.book-open .library-header,
+body.book-open .library-content {
+    opacity: 0;
+    filter: none !important;
+    transition: opacity 0.45s ease-out !important;
+    pointer-events: none;
 }

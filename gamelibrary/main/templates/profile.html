@@ -94,8 +94,8 @@
                     {% for game in favorite_games %}
                     <div class="game-item">
                         <div class="game-item-cover">
-                            {% if game.cover_image %}
-                                <img src="{{ game.cover_image.url }}" alt="{{ game.title }}">
+                            {% if game.cover %}
+                                <img src="{{ game.cover }}" alt="{{ game.title }}">
                             {% else %}
                                 <img src="https://via.placeholder.com/60x80/3b2a20/f5e1c8?text=Game" alt="{{ game.title }}">
                             {% endif %}
@@ -112,8 +112,12 @@
                             </div>
                         </div>
                         <div class="game-item-actions">
-                            <a href="{% url 'gamecard' game.id %}" class="view-button">View</a>
-                            <button class="remove-button" data-game-id="{{ game.id }}" data-type="favorite">
+                            {% if game.game_id %}
+                                <a href="{% url 'game_detail' game.game_id %}" class="view-button">View</a>
+                            {% else %}
+                                <span class="view-button disabled">Invalid</span>
+                            {% endif %}
+                            <button class="remove-button" data-game-id="{{ game.game_id }}" data-type="favorite">
                                 Remove
                             </button>
                         </div>
@@ -133,8 +137,8 @@
                     {% for game in played_games %}
                     <div class="game-item">
                         <div class="game-item-cover">
-                            {% if game.cover_image %}
-                                <img src="{{ game.cover_image.url }}" alt="{{ game.title }}">
+                            {% if game.cover %}
+                                <img src="{{ game.cover }}" alt="{{ game.title }}">
                             {% else %}
                                 <img src="https://via.placeholder.com/60x80/3b2a20/f5e1c8?text=Game" alt="{{ game.title }}">
                             {% endif %}
@@ -147,8 +151,8 @@
                             </div>
                         </div>
                         <div class="game-item-actions">
-                            <a href="{% url 'gamecard' game.id %}" class="view-button">View</a>
-                            <button class="remove-button" data-game-id="{{ game.id }}" data-type="played">
+                            <a href="{% url 'game_detail' game.game_id %}" class="view-button">View</a>
+                            <button class="remove-button" data-game-id="{{ game.game_id }}" data-type="played">
                                 Remove
                             </button>
                         </div>
@@ -171,57 +175,41 @@
     // Tab switching
     document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', function() {
-            // Remove active class from all tabs
-            document.querySelectorAll('.tab-button').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Add active class to clicked tab
+            document.querySelectorAll('.tab-button').forEach(tab => tab.classList.remove('active'));
             this.classList.add('active');
-            
-            // Hide all lists
-            document.querySelectorAll('.games-list').forEach(list => {
-                list.style.display = 'none';
-            });
-            
-            // Show selected list
-            const tabName = this.dataset.tab;
-            document.getElementById(tabName + '-list').style.display = 'block';
+            document.querySelectorAll('.games-list').forEach(list => list.style.display = 'none');
+            document.getElementById(this.dataset.tab + '-list').style.display = 'block';
         });
     });
 
-    // Close book when clicking bookmark
+    // Close book
     document.querySelector('.close-bookmark').addEventListener('click', function() {
-        window.location.href = "{% url 'index' %}";
+        window.location.href = "{% url 'library' %}";
     });
 
-    // Close book when clicking outside the book
     document.querySelector('.book-overlay').addEventListener('click', function(e) {
-        if (e.target === this) {
-            window.location.href = "{% url 'index' %}";
-        }
+        if (e.target === this) window.location.href = "{% url 'library' %}";
     });
 
-    // Edit profile button
+    // Edit profile
     document.querySelector('.edit-profile').addEventListener('click', function() {
         window.location.href = "{% url 'edit_profile' %}";
     });
 
-    // Logout button
+    // Logout
     document.querySelector('.logout').addEventListener('click', function() {
         if (confirm('Are you sure you want to logout?')) {
             window.location.href = "{% url 'logout' %}";
         }
     });
 
-    // Remove game from list
+    // Remove game
     document.querySelectorAll('.remove-button').forEach(button => {
         button.addEventListener('click', function() {
             const gameId = this.dataset.gameId;
             const type = this.dataset.type;
-            
+
             if (confirm(`Remove this game from your ${type} list?`)) {
-                // AJAX call to remove game
                 fetch(`/api/remove-from-${type}/`, {
                     method: 'POST',
                     headers: {
@@ -233,17 +221,11 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Remove the game item from the DOM
                         this.closest('.game-item').remove();
-                        
-                        // Update count if needed
                         location.reload();
                     }
                 })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to remove game. Please try again.');
-                });
+                .catch(err => alert('Failed to remove game.'));
             }
         });
     });

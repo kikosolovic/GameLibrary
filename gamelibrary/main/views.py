@@ -4,6 +4,10 @@ from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
+from django.http import HttpResponse
+from django.http import JsonResponse
+from .models import FavoriteGame, PlayedGame
+
 import requests
 import json
 
@@ -99,7 +103,7 @@ def login_view(request):
                 if check_password(password, user.password):
                     request.session['user_id'] = user.id
                     request.session['username'] = user.username
-                    return redirect('index')
+                    return redirect('library')
                 else:
                     messages.error(request, "Invalid password")
             except Users.DoesNotExist:
@@ -258,27 +262,80 @@ def register_view(request):
 def profile_view(request):
     user_id = request.session.get('user_id')
     if not user_id:
-        messages.error(request, "Please log in to view your profile.")
         return redirect('login')
 
-    try:
-        user = Users.objects.get(id=user_id)
-    except Users.DoesNotExist:
-        messages.error(request, "User not found.")
-        return redirect('login')
+    user = Users.objects.get(id=user_id)
 
-    favorite_games = []
-    played_games = []
+    favorite_games = FavoriteGame.objects.filter(user=user)
+    played_games = PlayedGame.objects.filter(user=user)
 
-    context = {
-        'user': user,
-        'favorite_games': favorite_games,
-        'played_games': played_games,
-        'favorites_count': len(favorite_games),
-        'played_count': len(played_games),
-    }
+    return render(request, "profile.html", {
+        "user": user,
+        "favorite_games": favorite_games,
+        "played_games": played_games,
+        "favorites_count": favorite_games.count(),
+        "played_count": played_games.count(),
+    })
 
-    return render(request, 'profile.html', context)
+
+def edit_profile_view(request):
+    return HttpResponse("Edit profile page here")
+
+def add_favorite(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST only"})
+
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "Not logged in"})
+
+    data = json.loads(request.body)
+    game_id = data.get("game_id")
+    title = data.get("title")
+    cover = data.get("cover")
+    genre = data.get("genre")
+    year = data.get("year")
+
+    FavoriteGame.objects.get_or_create(
+        user_id=user_id,
+        game_id=game_id,
+        defaults={
+            "title": title,
+            "cover": cover,
+            "genre": genre,
+            "year": year,
+        }
+    )
+
+    return JsonResponse({"success": True})
+
+def add_played(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST only"})
+
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "Not logged in"})
+
+    data = json.loads(request.body)
+    game_id = data.get("game_id")
+    title = data.get("title")
+    cover = data.get("cover")
+    genre = data.get("genre")
+    year = data.get("year")
+
+    PlayedGame.objects.get_or_create(
+        user_id=user_id,
+        game_id=game_id,
+        defaults={
+            "title": title,
+            "cover": cover,
+            "genre": genre,
+            "year": year,
+        }
+    )
+
+    return JsonResponse({"success": True})
 
 
 # ---------------------------------------------

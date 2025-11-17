@@ -24,10 +24,9 @@ const applyFilters = document.getElementById("apply-filters");
 
 const sortBtn = document.getElementById("sort-btn");
 const sortPopup = document.getElementById("sort-popup");
-let sortOptions = null; // will be set on DOMContentLoaded
+let sortOptions = null;
 
 const gameContainer = document.getElementById("game-container");
-const overlayContainer = document.getElementById("book-overlay-container");
 
 
 // ------------------------------------------------------
@@ -35,11 +34,9 @@ const overlayContainer = document.getElementById("book-overlay-container");
 // ------------------------------------------------------
 function renderGames(games) {
 
-    // Apply small smooth animation to the container
     gameContainer.classList.remove("show");
     gameContainer.classList.add("smooth-refresh");
 
-    // Small timeout so animation can restart
     setTimeout(() => {
         gameContainer.innerHTML = "";
 
@@ -49,7 +46,6 @@ function renderGames(games) {
             p.textContent = "No games found.";
             gameContainer.appendChild(p);
 
-            // Fade-in effect
             requestAnimationFrame(() => {
                 gameContainer.classList.add("show");
             });
@@ -66,7 +62,7 @@ function renderGames(games) {
                 card.classList.add("game-card");
                 card.dataset.appid = game.appid;
 
-                // Staggered fade-in for cards
+                // animation
                 card.style.opacity = "0";
                 card.style.transform = "translateY(6px)";
                 card.style.transition = "opacity 0.25s ease, transform 0.25s ease";
@@ -81,11 +77,13 @@ function renderGames(games) {
                     </div>
                 `;
 
-                card.addEventListener("click", () => openGameOverlay(game.appid));
+                // NEW: Direct navigation — no overlay injection
+                card.addEventListener("click", () => {
+                    window.location.href = `/game/${game.appid}/`;
+                });
 
                 shelf.appendChild(card);
 
-                // reveal animation
                 requestAnimationFrame(() => {
                     card.style.opacity = "1";
                     card.style.transform = "translateY(0)";
@@ -95,7 +93,6 @@ function renderGames(games) {
             gameContainer.appendChild(shelf);
         }
 
-        // Now fade in container
         requestAnimationFrame(() => {
             gameContainer.classList.add("show");
         });
@@ -182,55 +179,18 @@ function initDoubleSlider(sliderId, minLabelId, maxLabelId, setValuesCallback) {
     rangeMin.addEventListener("input", update);
     rangeMax.addEventListener("input", update);
 
-    // Initial labels
     update();
 }
-
-
-// ------------------------------------------------------
-//  OVERLAY (BOOK) LOGIC
-// ------------------------------------------------------
-function openGameOverlay(appid) {
-    // Fetch the game detail HTML and inject into overlay container
-    fetch(`/game/${appid}/`)
-        .then(res => {
-            if (!res.ok) throw new Error("Failed to load overlay");
-            return res.text();
-        })
-        .then(html => {
-            overlayContainer.innerHTML = html;
-            overlayContainer.style.display = "block";
-            document.body.classList.add("book-open");
-        })
-        .catch(err => console.error(err));
-}
-
-function closeGameOverlay() {
-    overlayContainer.innerHTML = "";
-    overlayContainer.style.display = "none";
-    document.body.classList.remove("book-open");
-}
-
-
-// Close overlay when clicking outside or on close button
-document.addEventListener("click", (e) => {
-    if (
-        e.target.classList.contains("book-overlay") ||
-        e.target.classList.contains("close-bookmark")
-    ) {
-        closeGameOverlay();
-    }
-});
 
 
 // ------------------------------------------------------
 //  INIT EVERYTHING
 // ------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
-    // Sort options now exist
+
     sortOptions = document.querySelectorAll(".sort-option");
 
-    // --- Search ---
+    // SEARCH
     if (searchInput) {
         searchInput.addEventListener("input", function () {
             activeFilters.search = this.value.trim();
@@ -238,12 +198,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Filters popup open/close ---
+    // FILTERS POPUP
     if (filtersBtn && filtersPopup && closeFilters) {
         filtersBtn.onclick = () => {
-            // Close sort if open
             if (sortPopup) sortPopup.classList.add("hidden");
-
             filtersPopup.classList.toggle("hidden");
         };
 
@@ -252,10 +210,9 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // --- Sort popup open/close ---
+    // SORT POPUP
     if (sortBtn && sortPopup) {
         sortBtn.onclick = () => {
-            // Close filters if open
             if (filtersPopup) filtersPopup.classList.add("hidden");
 
             const rect = sortBtn.getBoundingClientRect();
@@ -266,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // --- Sort option click ---
+    // SORT OPTION CLICK
     if (sortOptions) {
         sortOptions.forEach(btn => {
             btn.addEventListener("click", () => {
@@ -277,31 +234,34 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- Init sliders ---
-    initDoubleSlider("price-slider", "price-min-label", "price-max-label", (min, max) => {
-        activeFilters.priceMin = min;
-        activeFilters.priceMax = max;
-    });
+    // PRICE SLIDER
+    initDoubleSlider("price-slider", "price-min-label", "price-max-label",
+        (min, max) => {
+            activeFilters.priceMin = min;
+            activeFilters.priceMax = max;
+        }
+    );
 
-    initDoubleSlider("score-slider", "score-min-label", "score-max-label", (min, max) => {
-        activeFilters.scoreMin = min;
-        activeFilters.scoreMax = max;
-    });
+    // SCORE SLIDER
+    initDoubleSlider("score-slider", "score-min-label", "score-max-label",
+        (min, max) => {
+            activeFilters.scoreMin = min;
+            activeFilters.scoreMax = max;
+        }
+    );
 
-    // --- Apply filters button ---
+    // APPLY FILTERS
     if (applyFilters) {
         applyFilters.onclick = () => {
             const genreSelect = document.getElementById("filter-genre");
-            if (genreSelect) {
-                activeFilters.genre = genreSelect.value;
-            }
+            if (genreSelect) activeFilters.genre = genreSelect.value;
 
             filtersPopup.classList.add("hidden");
             fetchAndRenderGames();
         };
     }
 
-    // --- Clear filters button ---
+    // CLEAR FILTERS
     if (clearFilters) {
         clearFilters.onclick = () => {
             activeFilters.search = "";
@@ -312,17 +272,14 @@ document.addEventListener("DOMContentLoaded", () => {
             activeFilters.scoreMax = null;
             activeFilters.sort = "";
 
-            // Reset inputs
             if (searchInput) searchInput.value = "";
             const genreSelect = document.getElementById("filter-genre");
             if (genreSelect) genreSelect.value = "";
-
-            // Note: sliders stay visually where they are unless you also reset them here
 
             fetchAndRenderGames();
         };
     }
 
-    // Initial load
+    // INITIAL LOAD
     fetchAndRenderGames();
 });

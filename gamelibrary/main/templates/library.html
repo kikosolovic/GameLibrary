@@ -30,9 +30,9 @@
                     {% csrf_token %}
                     <button type="submit" class="shelf-button-logout">Log out</button>
                 </form>
-                <div class="username-picture">
+                <a href="{% url 'profile' %}" class="username-picture">
                     <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
-                </div>
+                </a>
             {% else %}
                 <a href="{% url 'login' %}" class="shelf-button-logout">Log in</a>
             {% endif %}
