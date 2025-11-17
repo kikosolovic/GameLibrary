@@ -333,8 +333,12 @@ body {
   padding: 15px;
   background: rgba(255, 255, 255, 0.3);
   border-radius: 8px;
+  box-sizing: border-box;
+
   margin-bottom: 15px;
-  transition: transform 0.2s, box-shadow 0.2s;
+    transition: opacity .35s ease, transform .35s ease, height .35s ease, margin .35s ease, padding .35s ease;
+    will-change: opacity, transform, height;
+    overflow: hidden;
   border: 1px solid rgba(212, 184, 150, 0.3);
 }
 
@@ -343,7 +347,14 @@ body {
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
   background: rgba(255, 255, 255, 0.5);
 }
-
+.game-item.removing {
+    opacity: 0 !important;
+    transform: translateY(-10px);
+    margin: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    height: 0 !important;
+}
 .game-item-cover {
   width: 60px;
   height: 80px;
@@ -456,7 +467,7 @@ body {
 /* Empty State */
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
+  padding: 1rem;
   color: #6b4423;
 }
 

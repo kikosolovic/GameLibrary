@@ -61,9 +61,9 @@
                 {% endif %}
                 
                 <div class="profile-actions">
-                    <button class="action-button edit-profile">
+                    <!-- <button class="action-button edit-profile">
                         Edit Profile
-                    </button>
+                    </button> -->
                     <button class="action-button secondary logout">
                         Logout
                     </button>
@@ -176,62 +176,137 @@
 
 {% block extra_js %}
 <script>
-    // Tab switching
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.addEventListener('click', function() {
-            document.querySelectorAll('.tab-button').forEach(tab => tab.classList.remove('active'));
-            this.classList.add('active');
-            document.querySelectorAll('.games-list').forEach(list => list.style.display = 'none');
-            document.getElementById(this.dataset.tab + '-list').style.display = 'block';
-        });
-    });
+/* helper to read CSRF cookie (Django default) */
+function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
 
-    // Close book
-    document.querySelector('.close-bookmark').addEventListener('click', function() {
-        window.location.href = "{% url 'library' %}";
+/* Tab switching */
+document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', function() {
+        document.querySelectorAll('.tab-button').forEach(tab => tab.classList.remove('active'));
+        this.classList.add('active');
+        document.querySelectorAll('.games-list').forEach(list => list.style.display = 'none');
+        document.getElementById(this.dataset.tab + '-list').style.display = 'block';
     });
+});
 
-    document.querySelector('.book-overlay').addEventListener('click', function(e) {
-        if (e.target === this) window.location.href = "{% url 'library' %}";
-    });
+/* Close book */
+document.querySelector('.close-bookmark').addEventListener('click', function() {
+    window.location.href = "{% url 'library' %}";
+});
 
-    // Edit profile
-    document.querySelector('.edit-profile').addEventListener('click', function() {
-        window.location.href = "{% url 'edit_profile' %}";
-    });
+document.querySelector('.book-overlay').addEventListener('click', function(e) {
+    if (e.target === this) window.location.href = "{% url 'library' %}";
+});
 
-    // Logout
-    document.querySelector('.logout').addEventListener('click', function() {
-        if (confirm('Are you sure you want to logout?')) {
-            window.location.href = "{% url 'logout' %}";
+// /* Edit profile */
+// document.querySelector('.edit-profile').addEventListener('click', function() {
+//     window.location.href = "{% url 'edit_profile' %}";
+// });
+
+/* Logout */
+document.querySelector('.logout').addEventListener('click', function() {
+    if (confirm('Are you sure you want to logout?')) {
+        window.location.href = "{% url 'logout' %}";
+    }
+});
+
+/* Remove game: animate item out, update counter, show empty state
+   - Uses transitionend where supported.
+   - Uses timeout fallback so item is removed even if transitionend doesn't fire.
+*/
+document.querySelectorAll('.remove-button').forEach(button => {
+    button.addEventListener('click', async function() {
+        const gameId = this.dataset.gameId;
+        const type = this.dataset.type; // 'favorite' or 'played'
+
+        if (!confirm(`Remove this game from your ${type} list?`)) return;
+
+        try {
+            const res = await fetch(`/api/remove-from-${type}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ game_id: gameId })
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                alert(data.error || 'Failed to remove game.');
+                return;
+            }
+
+            // animate removal
+            const item = this.closest('.game-item');
+            if (!item) return;
+
+            // measure and lock the height so transition to 0 works
+            const rect = item.getBoundingClientRect();
+            item.style.height = rect.height + 'px';
+            item.style.minHeight = rect.height + 'px';
+
+            // Force reflow then add class to trigger CSS transition
+            // (reading offsetHeight forces layout)
+            void item.offsetHeight;
+            item.classList.add('removing');
+
+            // cleanup helper (only runs once)
+            let cleaned = false;
+            const cleanup = () => {
+                if (cleaned) return;
+                cleaned = true;
+
+                // remove listeners and inline sizing
+                item.removeEventListener('transitionend', onEnd);
+                item.style.height = '';
+                item.style.minHeight = '';
+
+                const parentList = item.parentElement;
+                item.remove();
+
+                // update counters (assumes first .stat-number is favorites, second is played)
+                const statEls = document.querySelectorAll('.stat-number');
+                if (statEls.length >= 2) {
+                    if (type === 'favorite') {
+                        statEls[0].textContent = Math.max(0, parseInt(statEls[0].textContent || '0', 10) - 1);
+                    } else {
+                        statEls[1].textContent = Math.max(0, parseInt(statEls[1].textContent || '0', 10) - 1);
+                    }
+                }
+
+                // if list empty show empty-state
+                if (parentList && !parentList.querySelector('.game-item')) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    if (type === 'favorite') {
+                        empty.innerHTML = '<p>No favorite games yet!</p><p class="empty-state-hint">Browse our collection and add games you love.</p>';
+                    } else {
+                        empty.innerHTML = '<p>No games marked as played yet!</p><p class="empty-state-hint">Start tracking your gaming journey today.</p>';
+                    }
+                    parentList.appendChild(empty);
+                }
+            };
+
+            // transitionend listener (wait for height change)
+            function onEnd(e) {
+                if (e.propertyName !== 'height') return;
+                cleanup();
+            }
+            item.addEventListener('transitionend', onEnd);
+
+            // fallback: ensure cleanup after transition duration if transitionend doesn't fire
+            const FALLBACK_MS = 500;
+            setTimeout(cleanup, FALLBACK_MS);
+
+        } catch (err) {
+            console.error(err);
+            alert('Failed to remove game.');
         }
     });
-
-    // Remove game
-    document.querySelectorAll('.remove-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const gameId = this.dataset.gameId;
-            const type = this.dataset.type;
-
-            if (confirm(`Remove this game from your ${type} list?`)) {
-                fetch(`/api/remove-from-${type}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ game_id: gameId })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        this.closest('.game-item').remove();
-                        location.reload();
-                    }
-                })
-                .catch(err => alert('Failed to remove game.'));
-            }
-        });
-    });
+});
 </script>
 {% endblock %}
