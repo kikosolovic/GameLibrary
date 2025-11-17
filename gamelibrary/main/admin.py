@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Game, Users
+from .models import Game, Users, FavoriteGame, PlayedGame
 
 
 # ---------------------------------------------
@@ -76,3 +76,5 @@ class GameAdmin(admin.ModelAdmin):
 # Register Admin Panels
 admin.site.register(Game, GameAdmin)
 admin.site.register(Users)
+admin.site.register(FavoriteGame)
+admin.site.register(PlayedGame)
