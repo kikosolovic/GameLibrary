@@ -31,7 +31,7 @@
                 
                 <h1 class="profile-username">{{ user.username }}</h1>
                 
-                <div class="profile-stats">
+                <div class="profile-stats trio">
                     <div class="stat-item">
                         <span class="stat-number">{{ favorites_count|default:0 }}</span>
                         <span class="stat-label">Favorites</span>
@@ -41,32 +41,57 @@
                         <span class="stat-number">{{ played_count|default:0 }}</span>
                         <span class="stat-label">Played</span>
                     </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ wishlist_count|default:0 }}</span>
+                        <span class="stat-label">Wishlist</span>
+                    </div>
                 </div>
             </div>
 
             <!-- User Details Section -->
             <div class="user-details">
                 <h2 class="section-title">About Me</h2>
-                
-                <div class="detail-item">
-                    <span class="detail-label">Email:</span>
-                    <span class="detail-value">{{ user.email }}</span>
+
+                <div class="bio-card{% if not user.bio %} empty{% endif %}">
+                    <div class="bio-label">Bio</div>
+                    <p class="bio-text">{% if user.bio %}“{{ user.bio }}”{% else %}-{% endif %}</p>
                 </div>
-                
-                {% if user.bio %}
-                <div class="detail-item bio">
-                    <span class="detail-label">Bio:</span>
-                    <p class="detail-value">{{ user.bio }}</p>
+
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">{{ user.email|default:"-" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Genre</span>
+                        <span class="detail-value">{{ user.get_favourite_genre_display|default:"-" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Favorite game</span>
+                        <span class="detail-value">
+                            {% if user.favorite_game %}{{ user.favorite_game }}{% else %}-{% endif %}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Currently playing</span>
+                        <span class="detail-value">
+                            {% if user.currently_playing %}{{ user.currently_playing }}{% else %}-{% endif %}
+                        </span>
+                    </div>
                 </div>
-                {% endif %}
                 
                 <div class="profile-actions">
-                    <!-- <button class="action-button edit-profile">
-                        Edit Profile
-                    </button> -->
-                    <button class="action-button secondary logout">
-                        Logout
-                    </button>
+                    {% if is_owner %}
+                        <button class="action-button edit-profile">
+                            Edit Profile
+                        </button>
+                        <button class="action-button secondary logout">
+                            Logout
+                        </button>
+                    {% else %}
+                        <a class="action-button secondary" href="{% url 'library' %}">Back to Library</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -85,6 +110,12 @@
                 </button>
                 <button class="tab-button" data-tab="played">
                      Played Games
+                </button>
+                <button class="tab-button" data-tab="wishlist">
+                     Wishlist
+                </button>
+                <button class="tab-button" data-tab="people">
+                     People
                 </button>
             </div>
 
@@ -112,16 +143,18 @@
                             </div>
                         </div>
                             <div class="game-item-actions">
-                                {% if game.appid %}
-                                    <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
-                                {% else %}
-                                    <span class="view-button disabled">Invalid</span>
-                                {% endif %}
-                                <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="favorite">
+                            {% if game.appid %}
+                                <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
+                            {% else %}
+                                <span class="view-button disabled">Invalid</span>
+                            {% endif %}
+                            {% if is_owner %}
+                                <button class="remove-button" data-game-id="{{ game.game_id|default:'' }}" data-type="favorite">
                                     Remove
                                 </button>
-                            </div>
-                    </div>
+                            {% endif %}
+                        </div>
+                </div>
                     {% endfor %}
                 {% else %}
                     <div class="empty-state">
@@ -156,9 +189,11 @@
                             {% else %}
                                 <span class="view-button disabled">Invalid</span>
                             {% endif %}
-                            <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="played">
-                                Remove
-                            </button>
+                            {% if is_owner %}
+                                <button class="remove-button" data-game-id="{{ game.game_id|default:'' }}" data-type="played">
+                                    Remove
+                                </button>
+                            {% endif %}
                         </div>
                     </div>
                     {% endfor %}
@@ -168,6 +203,78 @@
                         <p class="empty-state-hint">Start tracking your gaming journey today.</p>
                     </div>
                 {% endif %}
+            </div>
+
+            <!-- Wishlist List -->
+            <div class="games-list" id="wishlist-list" style="display: none;">
+                {% if wishlist_games %}
+                    {% for game in wishlist_games %}
+                    <div class="game-item">
+                        <div class="game-item-cover">
+                            {% if game.cover %}
+                                <img src="{{ game.cover }}" alt="{{ game.title }}">
+                            {% else %}
+                                <img src="https://via.placeholder.com/60x80/3b2a20/f5e1c8?text=Wish" alt="{{ game.title }}">
+                            {% endif %}
+                        </div>
+                        <div class="game-item-info">
+                            <h3 class="game-item-title">{{ game.title }}</h3>
+                            <div class="game-item-meta">
+                                <span class="meta-badge mini">{{ game.genre|default:"" }}</span>
+                                <span class="meta-badge mini">{{ game.year|default:"" }}</span>
+                            </div>
+                        </div>
+                        <div class="game-item-actions">
+                            {% if game.appid %}
+                                <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
+                            {% else %}
+                                <span class="view-button disabled">Pending</span>
+                            {% endif %}
+                            {% if is_owner %}
+                                <button class="remove-button" data-game-id="{{ game.game_id|default:'' }}" data-type="wishlist">
+                                    Remove
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>Wishlist is empty.</p>
+                        <p class="empty-state-hint">Add a few titles to keep an eye on deals.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- People List -->
+            <div class="games-list people-list" id="people-list" style="display: none;">
+                <div class="people-search">
+                    <input type="text" id="people-search-input" placeholder="Search players by username...">
+                    <div class="people-hint">Type to find players, send requests, and visit their shelf.</div>
+                </div>
+
+                <div class="people-section">
+                    <h4 class="people-section-title">Discover</h4>
+                    <div id="people-results" class="people-results empty-state initial-people">
+                        <p>Start typing to discover fellow readers.</p>
+                    </div>
+                </div>
+
+                {% if is_owner %}
+                <div class="people-section">
+                    <h4 class="people-section-title">Pending Requests</h4>
+                    <div id="people-pending" class="people-results initial-people">
+                        <p class="muted">No pending requests.</p>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="people-section">
+                    <h4 class="people-section-title">Friends</h4>
+                    <div id="people-friends" class="people-results initial-people">
+                        <p class="muted">No friends yet.</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -201,17 +308,22 @@ document.querySelector('.book-overlay').addEventListener('click', function(e) {
     if (e.target === this) window.location.href = "{% url 'library' %}";
 });
 
-// /* Edit profile */
-// document.querySelector('.edit-profile').addEventListener('click', function() {
-//     window.location.href = "{% url 'edit_profile' %}";
-// });
+const editBtn = document.querySelector('.edit-profile');
+if (editBtn) {
+    editBtn.addEventListener('click', function() {
+        window.location.href = "{% url 'edit_profile' %}";
+    });
+}
 
 /* Logout */
-document.querySelector('.logout').addEventListener('click', function() {
-    if (confirm('Are you sure you want to logout?')) {
-        window.location.href = "{% url 'logout' %}";
-    }
-});
+const logoutBtn = document.querySelector('.logout');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to logout?')) {
+            window.location.href = "{% url 'logout' %}";
+        }
+    });
+}
 
 /* Remove game: animate item out, update counter, show empty state
    - Uses transitionend where supported.
@@ -270,11 +382,11 @@ document.querySelectorAll('.remove-button').forEach(button => {
 
                 // update counters (assumes first .stat-number is favorites, second is played)
                 const statEls = document.querySelectorAll('.stat-number');
-                if (statEls.length >= 2) {
-                    if (type === 'favorite') {
-                        statEls[0].textContent = Math.max(0, parseInt(statEls[0].textContent || '0', 10) - 1);
-                    } else {
-                        statEls[1].textContent = Math.max(0, parseInt(statEls[1].textContent || '0', 10) - 1);
+                if (statEls.length >= 3) {
+                    const indexMap = { favorite: 0, played: 1, wishlist: 2 };
+                    const idx = indexMap[type];
+                    if (idx !== undefined) {
+                        statEls[idx].textContent = Math.max(0, parseInt(statEls[idx].textContent || '0', 10) - 1);
                     }
                 }
 
@@ -284,6 +396,8 @@ document.querySelectorAll('.remove-button').forEach(button => {
                     empty.className = 'empty-state';
                     if (type === 'favorite') {
                         empty.innerHTML = '<p>No favorite games yet!</p><p class="empty-state-hint">Browse our collection and add games you love.</p>';
+                    } else if (type === 'wishlist') {
+                        empty.innerHTML = '<p>Wishlist is empty.</p><p class="empty-state-hint">Add a few titles to keep an eye on deals.</p>';
                     } else {
                         empty.innerHTML = '<p>No games marked as played yet!</p><p class="empty-state-hint">Start tracking your gaming journey today.</p>';
                     }
@@ -308,5 +422,249 @@ document.querySelectorAll('.remove-button').forEach(button => {
         }
     });
 });
+
+/* People search */
+const peopleInput = document.getElementById('people-search-input');
+const peopleResults = document.getElementById('people-results');
+const peopleFriends = document.getElementById('people-friends');
+const peoplePending = document.getElementById('people-pending');
+let peopleTimer = null;
+
+function renderPeople(results) {
+    if (!peopleResults) return;
+    peopleResults.innerHTML = '';
+    peopleResults.classList.remove('initial-people');
+
+    if (!results || results.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.innerHTML = '<p>No players found.</p><p class="empty-state-hint">Try another username.</p>';
+        peopleResults.appendChild(empty);
+        return;
+    }
+
+    results.forEach((u, idx) => {
+        const card = document.createElement('div');
+        card.className = 'people-card';
+        card.style.animationDelay = `${idx * 0.04}s`;
+        let actionHTML = '<div class="people-action">View</div>';
+        if (u.friend_status === 'self') {
+            actionHTML = '<div class="people-action success">You</div>';
+        } else if (u.friend_status === 'friends') {
+            actionHTML = '<div class="people-action success">Friends</div>';
+        } else if (u.friend_status === 'pending_out') {
+            actionHTML = '<div class="people-action pending">Pending</div>';
+        } else if (u.friend_status === 'pending_in') {
+            actionHTML = '<div class="people-action buttonish" data-action="accept">Accept</div>';
+        } else {
+            actionHTML = '<div class="people-action buttonish" data-action="add">Add</div>';
+        }
+        card.innerHTML = `
+            <div class="people-avatar">
+                ${u.avatar ? `<img src="${u.avatar}" alt="${u.username} avatar">` : `<div class="avatar-placeholder-small">${(u.username||'?').charAt(0).toUpperCase()}</div>`}
+            </div>
+            <div class="people-meta">
+                <div class="people-name">${u.username}</div>
+                <div class="people-line">${u.favourite_genre || ''}</div>
+                <div class="people-line subtle">${u.favorite_game ? 'Fav: ' + u.favorite_game : ''}</div>
+            </div>
+            ${actionHTML}
+        `;
+
+        const actionBtn = card.querySelector('.people-action.buttonish');
+        if (actionBtn && actionBtn.dataset.action === 'add') {
+            actionBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sendFriendRequest(u.username, actionBtn);
+            });
+        } else if (actionBtn && actionBtn.dataset.action === 'accept') {
+            actionBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                acceptFriendRequest(u.username, actionBtn);
+            });
+        }
+
+        card.addEventListener('click', () => {
+            window.location.href = u.friend_status === 'self' ? "{% url 'profile' %}" : `/u/${encodeURIComponent(u.username)}/`;
+        });
+        peopleResults.appendChild(card);
+    });
+}
+
+async function searchPeople(q) {
+    if (!q) {
+        if (peopleResults) {
+            peopleResults.innerHTML = '<p class="muted">Start typing to discover fellow readers.</p>';
+            peopleResults.classList.add('initial-people');
+        }
+        return;
+    }
+    const res = await fetch(`/api/people-search/?q=${encodeURIComponent(q || '')}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    renderPeople(data.results || []);
+}
+
+if (peopleInput) {
+    peopleInput.addEventListener('input', () => {
+        const q = peopleInput.value.trim();
+        clearTimeout(peopleTimer);
+        peopleTimer = setTimeout(() => searchPeople(q), 200);
+    });
+}
+
+async function renderFriends() {
+    if (!peopleFriends) return;
+    const res = await fetch("/api/friends/");
+    if (!res.ok) return;
+    const data = await res.json();
+    const items = data.friends || [];
+    peopleFriends.innerHTML = "";
+    if (items.length === 0) {
+        peopleFriends.innerHTML = '<p class="muted">No friends yet.</p>';
+        peopleFriends.classList.add('initial-people');
+        return;
+    }
+    items.forEach((u, idx) => {
+        const card = document.createElement('div');
+        card.className = 'people-card';
+        card.style.animationDelay = `${idx * 0.03}s`;
+        card.innerHTML = `
+            <div class="people-avatar">
+                ${u.avatar ? `<img src="${u.avatar}" alt="${u.username} avatar">` : `<div class="avatar-placeholder-small">${(u.username||'?').charAt(0).toUpperCase()}</div>`}
+            </div>
+            <div class="people-meta">
+                <div class="people-name">${u.username}</div>
+                <div class="people-line">${u.favourite_genre || ''}</div>
+                <div class="people-line subtle">${u.favorite_game ? 'Fav: ' + u.favorite_game : ''}</div>
+            </div>
+            <div class="people-action success">Friends</div>
+        `;
+        card.addEventListener('click', () => {
+            window.location.href = `/u/${encodeURIComponent(u.username)}/`;
+        });
+        peopleFriends.appendChild(card);
+    });
+}
+
+async function renderPending() {
+    if (!peoplePending) return;
+    const res = await fetch("/api/friend-requests/");
+    if (!res.ok) return;
+    const data = await res.json();
+    const items = data.requests || [];
+    peoplePending.innerHTML = "";
+    if (items.length === 0) {
+        peoplePending.innerHTML = '<p class="muted">No pending requests.</p>';
+        peoplePending.classList.add('initial-people');
+        return;
+    }
+    items.forEach((u, idx) => {
+        const card = document.createElement('div');
+        card.className = 'people-card';
+        card.style.animationDelay = `${idx * 0.03}s`;
+        card.innerHTML = `
+            <div class="people-avatar">
+                ${u.avatar ? `<img src="${u.avatar}" alt="${u.username} avatar">` : `<div class="avatar-placeholder-small">${(u.username||'?').charAt(0).toUpperCase()}</div>`}
+            </div>
+            <div class="people-meta">
+                <div class="people-name">${u.username}</div>
+                <div class="people-line">${u.favourite_genre || ''}</div>
+                <div class="people-line subtle">${u.favorite_game ? 'Fav: ' + u.favorite_game : ''}</div>
+            </div>
+            <div class="people-actions-row">
+                <div class="people-action buttonish" data-action="accept">Accept</div>
+                <div class="people-action buttonish decline" data-action="decline">Decline</div>
+            </div>
+        `;
+        const acc = card.querySelector('[data-action=\"accept\"]');
+        const dec = card.querySelector('[data-action=\"decline\"]');
+        acc.addEventListener('click', (e) => {
+            e.stopPropagation();
+            acceptFriendRequest(u.username);
+        });
+        dec.addEventListener('click', (e) => {
+            e.stopPropagation();
+            declineFriendRequest(u.username);
+        });
+        card.addEventListener('click', () => {
+            window.location.href = `/u/${encodeURIComponent(u.username)}/`;
+        });
+        peoplePending.appendChild(card);
+    });
+}
+
+async function sendFriendRequest(username, btn) {
+    try {
+        const res = await fetch("/api/friend-request/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (data.success && btn) {
+            btn.textContent = data.status === 'friends' ? 'Friends' : 'Pending';
+            btn.classList.remove('buttonish');
+            btn.classList.add(data.status === 'friends' ? 'success' : 'pending');
+        }
+        renderFriends();
+        renderPending();
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function acceptFriendRequest(username, btn) {
+    try {
+        const res = await fetch("/api/friend-request/accept/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (btn) {
+                btn.textContent = "Friends";
+                btn.classList.remove('buttonish', 'pending');
+                btn.classList.add('success');
+            }
+            renderFriends();
+            renderPending();
+            searchPeople(peopleInput ? peopleInput.value.trim() : '');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+async function declineFriendRequest(username) {
+    try {
+        const res = await fetch("/api/friend-request/decline/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            renderPending();
+            searchPeople(peopleInput ? peopleInput.value.trim() : '');
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// initial friends/pending load
+renderFriends();
+renderPending();
 </script>
 {% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - Open Book{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="book-overlay">
+    <div class="open-book edit-book">
+        <div class="book-spine"></div>
+
+        <!-- Left page: preview -->
+        <div class="book-page-left edit-left">
+            <div class="page-lines"></div>
+
+            <div class="profile-header compact">
+                <div class="profile-avatar large">
+                    {% if user.avatar %}
+                        <img src="{{ user.avatar.url }}" alt="Current avatar">
+                    {% else %}
+                        <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+                    {% endif %}
+                </div>
+                <h1 class="profile-username">{{ user.username }}</h1>
+                <p class="edit-subtitle">Refresh your library card with a new look and bio.</p>
+
+                <div class="profile-stats trio">
+                    <div class="stat-item">
+                        <span class="stat-number">{{ favorites_count|default:0 }}</span>
+                        <span class="stat-label">Favorites</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ played_count|default:0 }}</span>
+                        <span class="stat-label">Played</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ wishlist_count|default:0 }}</span>
+                        <span class="stat-label">Wishlist</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-inspiration">
+                <h3>Style Guide</h3>
+                <ul>
+                    <li>Keep the bio short—two or three cozy lines.</li>
+                    <li>Mention your favorite genre to surface better picks.</li>
+                    <li>Add a warm avatar to match the vintage shelves vibe.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right page: form -->
+        <div class="book-page-right edit-right">
+            <div class="page-lines"></div>
+            <div class="edit-form-card">
+                <div class="edit-form-header">
+                    <h2>Update Profile</h2>
+                    <p class="muted">Refine your bio, favorites, and avatar without leaving the library.</p>
+                </div>
+
+                <form method="post" enctype="multipart/form-data" class="profile-form">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="form-errors">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="form-grid">
+                        <div class="form-field">
+                            <label for="{{ form.username.id_for_label }}">Username</label>
+                            {{ form.username }}
+                            {% for error in form.username.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.email.id_for_label }}">Email</label>
+                            {{ form.email }}
+                            {% for error in form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field full">
+                            <label for="{{ form.bio.id_for_label }}">Bio</label>
+                            {{ form.bio }}
+                            {% for error in form.bio.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.favourite_genre.id_for_label }}">Favourite Genre</label>
+                            {{ form.favourite_genre }}
+                            {% for error in form.favourite_genre.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.gender.id_for_label }}">Gender</label>
+                            {{ form.gender }}
+                            {% for error in form.gender.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.favorite_game.id_for_label }}">Favorite Game</label>
+                            {{ form.favorite_game }}
+                            {% for error in form.favorite_game.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field">
+                            <label for="{{ form.currently_playing.id_for_label }}">Currently Playing</label>
+                            {{ form.currently_playing }}
+                            {% for error in form.currently_playing.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="form-field full">
+                            <label for="{{ form.avatar.id_for_label }}">Avatar</label>
+                            {{ form.avatar }}
+                            <span class="muted">Square images look best. Max ~2MB.</span>
+                            {% for error in form.avatar.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a class="action-button secondary" href="{% url 'profile' %}">Cancel</a>
+                        <button type="submit" class="action-button">Save changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Game, Users, FavoriteGame, PlayedGame
+from .models import Game, Users, FavoriteGame, PlayedGame, WishlistGame, FriendRequest, Friend
 
 
 # ---------------------------------------------
@@ -78,3 +78,6 @@ admin.site.register(Game, GameAdmin)
 admin.site.register(Users)
 admin.site.register(FavoriteGame)
 admin.site.register(PlayedGame)
+admin.site.register(WishlistGame)
+admin.site.register(FriendRequest)
+admin.site.register(Friend)

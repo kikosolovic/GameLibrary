@@ -151,8 +151,9 @@
 
       <div class="game-actions">
         {% if request.session.user_id %}
-            <button id="btnFavorite" class="action-button">Add to Favorites ❤️</button>
-            <button id="btnPlayed" class="action-button secondary">Mark as Played ✓</button>
+            <button id="btnFavorite" class="action-button">Add to Favorites</button>
+            <button id="btnPlayed" class="action-button secondary">Mark as Played</button>
+            <button id="btnWishlist" class="action-button ghost">Add to Wishlist</button>
         {% else %}
             <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
         {% endif %}
@@ -213,11 +214,11 @@
 })();
 </script>
 
-
-<!-- ========== SCRIPT 2: FAVORITES + PLAYED ========== -->
+<!-- ========== SCRIPT 2: FAVORITES / PLAYED / WISHLIST ========== -->
 <script>
 const btnFav = document.getElementById("btnFavorite");
 const btnPlayed = document.getElementById("btnPlayed");
+const btnWishlist = document.getElementById("btnWishlist");
 
 function postJSON(url, data) {
     return fetch(url, {
@@ -239,7 +240,7 @@ btnFav?.addEventListener("click", () => {
         year: "{{ game.release_date }}",
     }).then(res => {
         if (res.success) {
-            btnFav.textContent = "Added ✓";
+            btnFav.textContent = "Added to favorites";
             btnFav.style.opacity = "0.6";
         }
     });
@@ -254,8 +255,23 @@ btnPlayed?.addEventListener("click", () => {
         year: "{{ game.release_date }}",
     }).then(res => {
         if (res.success) {
-            btnPlayed.textContent = "Marked ✓";
+            btnPlayed.textContent = "Marked as played";
             btnPlayed.style.opacity = "0.6";
+        }
+    });
+});
+
+btnWishlist?.addEventListener("click", () => {
+    postJSON("/api/add-wishlist/", {
+        game_id: "{{ game.appid }}",
+        title: "{{ game.name|escapejs }}",
+        cover: "{{ game.image }}",
+        genre: "{{ game.genre }}",
+        year: "{{ game.release_date }}",
+    }).then(res => {
+        if (res.success) {
+            btnWishlist.textContent = "In wishlist";
+            btnWishlist.style.opacity = "0.6";
         }
     });
 });

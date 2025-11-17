@@ -1,18 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.hashers import check_password
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
-from django.http import HttpResponse
-from django.http import JsonResponse
-from .models import FavoriteGame, PlayedGame
 
 import requests
 import json
 
-from .forms import RegistrationForm, LoginForm
-from .models import Users, Game
+from .forms import RegistrationForm, LoginForm, ProfileForm
+from .models import Users, Game, FavoriteGame, PlayedGame, WishlistGame, FriendRequest, Friend
 
 
 # ---------------------------------------------
@@ -59,6 +56,10 @@ def library_view(request):
             return None
 
     games = Game.objects.all()
+    user_obj = None
+    user_id = request.session.get("user_id")
+    if user_id:
+        user_obj = Users.objects.filter(id=user_id).first()
 
     prices = [extract_price(g.price) for g in games if extract_price(g.price) is not None]
     if prices:
@@ -82,6 +83,7 @@ def library_view(request):
         "price_max": price_max,
         "score_min": score_min,
         "score_max": score_max,
+        "current_user": user_obj,
     })
 
 
@@ -269,9 +271,15 @@ def profile_view(request):
 
     favorite_games_qs = FavoriteGame.objects.filter(user=user)
     played_games_qs = PlayedGame.objects.filter(user=user)
+    wishlist_games_qs = WishlistGame.objects.filter(user=user)
+    friends_qs = Friend.objects.filter(user=user).select_related("friend")
+    pending_qs = FriendRequest.objects.filter(to_user=user, status=FriendRequest.PENDING).select_related("from_user")
 
     favorite_games = list(favorite_games_qs)
     played_games = list(played_games_qs)
+    wishlist_games = list(wishlist_games_qs)
+    friends = [f.friend for f in friends_qs]
+    pending_requests = [fr.from_user for fr in pending_qs]
 
     def attach_appid(obj):
         gid = (obj.game_id or "").strip()
@@ -283,17 +291,90 @@ def profile_view(request):
 
     favorite_games = [attach_appid(g) for g in favorite_games]
     played_games = [attach_appid(g) for g in played_games]
+    wishlist_games = [attach_appid(g) for g in wishlist_games]
 
     return render(request, "profile.html", {
         "user": user,
         "favorite_games": favorite_games,
         "played_games": played_games,
+        "wishlist_games": wishlist_games,
         "favorites_count": len(favorite_games),
         "played_count": len(played_games),
+        "wishlist_count": len(wishlist_games),
+        "is_owner": True,
+        "friends": friends,
+        "pending_requests": pending_requests,
     })
 
 def edit_profile_view(request):
-    return HttpResponse("Edit profile page here")
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return redirect('login')
+
+    user = get_object_or_404(Users, id=user_id)
+    favorites_count = FavoriteGame.objects.filter(user=user).count()
+    played_count = PlayedGame.objects.filter(user=user).count()
+    wishlist_count = WishlistGame.objects.filter(user=user).count()
+    friends = [f.friend for f in Friend.objects.filter(user=user).select_related("friend")]
+    pending_requests = [fr.from_user for fr in FriendRequest.objects.filter(to_user=user, status=FriendRequest.PENDING).select_related("from_user")]
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated successfully.")
+            return redirect('profile')
+        else:
+            messages.error(request, "Please fix the errors highlighted below.")
+    else:
+        form = ProfileForm(instance=user)
+
+    return render(request, "edit_profile.html", {
+        "form": form,
+        "user": user,
+        "favorites_count": favorites_count,
+        "played_count": played_count,
+        "wishlist_count": wishlist_count,
+        "friends": friends,
+        "pending_requests": pending_requests,
+    })
+
+
+def public_profile_view(request, username):
+    target_user = get_object_or_404(Users, username=username)
+    viewer_id = request.session.get("user_id")
+    is_owner = viewer_id == target_user.id if viewer_id else False
+
+    favorite_games_qs = FavoriteGame.objects.filter(user=target_user)
+    played_games_qs = PlayedGame.objects.filter(user=target_user)
+    wishlist_games_qs = WishlistGame.objects.filter(user=target_user)
+    friends = [f.friend for f in Friend.objects.filter(user=target_user).select_related("friend")]
+    pending_requests = []
+
+    def attach_appid(obj):
+        gid = (obj.game_id or "").strip()
+        try:
+            obj.appid = int(gid)
+        except (ValueError, TypeError):
+            obj.appid = None
+        return obj
+
+    favorite_games = [attach_appid(g) for g in favorite_games_qs]
+    played_games = [attach_appid(g) for g in played_games_qs]
+    wishlist_games = [attach_appid(g) for g in wishlist_games_qs]
+
+    return render(request, "profile.html", {
+        "user": target_user,
+        "favorite_games": favorite_games,
+        "played_games": played_games,
+        "wishlist_games": wishlist_games,
+        "favorites_count": len(favorite_games),
+        "played_count": len(played_games),
+        "wishlist_count": len(wishlist_games),
+        "is_owner": is_owner,
+        "friends": friends,
+        "pending_requests": pending_requests,
+    })
 
 def add_favorite(request):
     if request.method != "POST":
@@ -365,6 +446,36 @@ def add_played(request):
 
     return JsonResponse({"success": True})
 
+def add_wishlist(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False}, status=405)
+
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "unauthenticated"}, status=403)
+
+    data = json.loads(request.body)
+    game_id = data.get("game_id")
+    if game_id is None:
+        return JsonResponse({"success": False, "error": "missing_game_id"}, status=400)
+
+    game_id = str(game_id).strip()
+    if not game_id.isdigit():
+        return JsonResponse({"success": False, "error": "invalid_game_id"}, status=400)
+
+    WishlistGame.objects.get_or_create(
+        user_id=user_id,
+        game_id=game_id,
+        defaults={
+            "title": data.get("title"),
+            "cover": data.get("cover"),
+            "genre": data.get("genre"),
+            "year": data.get("year"),
+        }
+    )
+
+    return JsonResponse({"success": True})
+
 # ---------------------------------------------
 #   REMOVE FAVORITES / PLAYED
 # ---------------------------------------------
@@ -400,6 +511,23 @@ def remove_from_played(request):
             return JsonResponse({'success': False, 'error': 'invalid_game_id'}, status=400)
 
         deleted_count, _ = PlayedGame.objects.filter(user_id=user_id, game_id=game_id).delete()
+        return JsonResponse({'success': True, 'deleted': deleted_count})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+@require_POST
+def remove_from_wishlist(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+
+    try:
+        data = json.loads(request.body)
+        game_id = (data.get('game_id') or "").strip()
+        if not game_id.isdigit():
+            return JsonResponse({'success': False, 'error': 'invalid_game_id'}, status=400)
+
+        deleted_count, _ = WishlistGame.objects.filter(user_id=user_id, game_id=game_id).delete()
         return JsonResponse({'success': True, 'deleted': deleted_count})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
@@ -501,3 +629,164 @@ def filter_games_api(request):
     } for g in qs]
 
     return JsonResponse({"results": results})
+
+
+def people_search_api(request):
+    query = (request.GET.get("q") or "").strip()
+    qs = Users.objects.all()
+    if query:
+        qs = qs.filter(username__icontains=query)[:10]
+    else:
+        qs = qs.order_by("username")[:10]
+
+    current_user_id = request.session.get("user_id")
+    friends = set(Friend.objects.filter(user_id=current_user_id).values_list("friend_id", flat=True)) if current_user_id else set()
+    incoming = set()
+    outgoing = set()
+    if current_user_id:
+        incoming = set(FriendRequest.objects.filter(to_user_id=current_user_id, status=FriendRequest.PENDING).values_list("from_user_id", flat=True))
+        outgoing = set(FriendRequest.objects.filter(from_user_id=current_user_id, status=FriendRequest.PENDING).values_list("to_user_id", flat=True))
+
+    results = []
+    for u in qs:
+        status = "none"
+        if current_user_id == u.id:
+            status = "self"
+        elif u.id in friends:
+            status = "friends"
+        elif u.id in outgoing:
+            status = "pending_out"
+        elif u.id in incoming:
+            status = "pending_in"
+
+        results.append({
+            "username": u.username,
+            "avatar": u.avatar.url if u.avatar else None,
+            "favourite_genre": u.get_favourite_genre_display(),
+            "favorite_game": u.favorite_game or "",
+            "bio": u.bio or "",
+            "friend_status": status,
+        })
+
+    return JsonResponse({"results": results})
+
+
+@require_POST
+def send_friend_request(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "unauthenticated"}, status=403)
+
+    data = json.loads(request.body)
+    username = (data.get("username") or "").strip()
+    if not username:
+        return JsonResponse({"success": False, "error": "missing_username"}, status=400)
+
+    try:
+        target = Users.objects.get(username=username)
+    except Users.DoesNotExist:
+        return JsonResponse({"success": False, "error": "user_not_found"}, status=404)
+
+    if target.id == user_id:
+        return JsonResponse({"success": False, "error": "cannot_add_self"}, status=400)
+
+    # Already friends?
+    if Friend.objects.filter(user_id=user_id, friend=target).exists():
+        return JsonResponse({"success": True, "status": "friends"})
+
+    fr, created = FriendRequest.objects.get_or_create(
+        from_user_id=user_id, to_user=target, defaults={"status": FriendRequest.PENDING}
+    )
+    if not created and fr.status == FriendRequest.ACCEPTED:
+        return JsonResponse({"success": True, "status": "friends"})
+    if not created and fr.status == FriendRequest.PENDING:
+        return JsonResponse({"success": True, "status": "pending"})
+
+    fr.status = FriendRequest.PENDING
+    fr.save()
+    return JsonResponse({"success": True, "status": "pending"})
+
+
+@require_POST
+def accept_friend_request(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "unauthenticated"}, status=403)
+
+    data = json.loads(request.body)
+    username = (data.get("username") or "").strip()
+    if not username:
+        return JsonResponse({"success": False, "error": "missing_username"}, status=400)
+
+    try:
+        sender = Users.objects.get(username=username)
+    except Users.DoesNotExist:
+        return JsonResponse({"success": False, "error": "user_not_found"}, status=404)
+
+    try:
+        fr = FriendRequest.objects.get(from_user=sender, to_user_id=user_id, status=FriendRequest.PENDING)
+    except FriendRequest.DoesNotExist:
+        return JsonResponse({"success": False, "error": "request_not_found"}, status=404)
+
+    fr.status = FriendRequest.ACCEPTED
+    fr.save()
+
+    Friend.objects.get_or_create(user_id=user_id, friend=sender)
+    Friend.objects.get_or_create(user=sender, friend_id=user_id)
+
+    return JsonResponse({"success": True, "status": "accepted"})
+
+
+@require_POST
+def decline_friend_request(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"success": False, "error": "unauthenticated"}, status=403)
+
+    data = json.loads(request.body)
+    username = (data.get("username") or "").strip()
+    if not username:
+        return JsonResponse({"success": False, "error": "missing_username"}, status=400)
+
+    try:
+        sender = Users.objects.get(username=username)
+    except Users.DoesNotExist:
+        return JsonResponse({"success": False, "error": "user_not_found"}, status=404)
+
+    try:
+        fr = FriendRequest.objects.get(from_user=sender, to_user_id=user_id, status=FriendRequest.PENDING)
+    except FriendRequest.DoesNotExist:
+        return JsonResponse({"success": False, "error": "request_not_found"}, status=404)
+
+    fr.status = FriendRequest.DECLINED
+    fr.save()
+
+    return JsonResponse({"success": True, "status": "declined"})
+
+
+def friends_api(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"friends": []})
+    friends = Friend.objects.filter(user_id=user_id).select_related("friend")
+    data = [{
+        "username": f.friend.username,
+        "avatar": f.friend.avatar.url if f.friend.avatar else None,
+        "favourite_genre": f.friend.get_favourite_genre_display(),
+        "favorite_game": f.friend.favorite_game or "",
+    } for f in friends]
+    return JsonResponse({"friends": data})
+
+
+def friend_requests_api(request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return JsonResponse({"requests": []})
+    incoming = FriendRequest.objects.filter(to_user_id=user_id, status=FriendRequest.PENDING).select_related("from_user")
+    data = [{
+        "username": fr.from_user.username,
+        "avatar": fr.from_user.avatar.url if fr.from_user.avatar else None,
+        "favourite_genre": fr.from_user.get_favourite_genre_display(),
+        "favorite_game": fr.from_user.favorite_game or "",
+    } for fr in incoming]
+    return JsonResponse({"requests": data})

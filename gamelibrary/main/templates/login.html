@@ -12,11 +12,13 @@
     <h1>Login</h1>
 
     {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-                <p class="error">{{ message }}</p>
-            {% endfor %}
-        </div>
+        {% for message in messages %}
+            {% if message.tags != "success" %}
+                <div class="messages">
+                    <p class="error">{{ message }}</p>
+                </div>
+            {% endif %}
+        {% endfor %}
     {% endif %}
 
     <form id="login-form" method="POST" novalidate>

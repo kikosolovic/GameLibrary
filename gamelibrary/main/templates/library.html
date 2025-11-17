@@ -29,7 +29,13 @@
                     <button type="submit" class="shelf-button-logout">Log out</button>
                 </form>
                 <a href="{% url 'profile' %}" class="username-picture">
-                    <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
+                    {% if current_user and current_user.avatar %}
+                        <img src="{{ current_user.avatar.url }}" alt="{{ current_user.username }} profile picture">
+                    {% else %}
+                        <div class="avatar-placeholder-small">
+                            {{ request.session.username|default:"?"|first|upper }}
+                        </div>
+                    {% endif %}
                 </a>
             {% else %}
                 <a href="{% url 'login' %}" class="shelf-button-logout">Log in</a>
