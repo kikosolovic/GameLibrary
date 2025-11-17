@@ -9,48 +9,135 @@
 
 {% block content %}
 <div class="library-background">
-    <!-- Sidebar header -->
+
+    <!-- SIDEBAR -->
     <header class="library-header">
+        <!-- SEARCH -->
         <div class="search-bar">
-            <input type="text" placeholder="Search...">
+            <input id="search-input" type="text" placeholder="Search...">
         </div>
 
-        <div class="shelf-button">Algo</div>
-        <div class="shelf-button">Filter</div>
+        <!-- FILTERS + SORT -->
+        <div class="shelf-button" id="sort-btn">Sort</div>
+        <div class="shelf-button" id="filters-btn">Filter</div>
+
         <div class="shelf-button">...</div>
 
+        <!-- USER PANEL -->
         <div class="user-row">
             {% if request.session.user_id %}
-                <!-- Logged-in user -->
                 <form method="POST" action="{% url 'logout' %}" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="shelf-button-logout">Log out</button>
                 </form>
-                <div class="username-picture">
+                <a href="{% url 'profile' %}" class="username-picture">
                     <img src="{% static 'images/bubly.png' %}" alt="Profile Picture">
-                </div>
+                </a>
             {% else %}
-                <!-- Guest -->
                 <a href="{% url 'login' %}" class="shelf-button-logout">Log in</a>
             {% endif %}
         </div>
     </header>
 
-    <!-- Main content -->
-<main class="library-content">
-    {% for shelf in shelves %}
-        <div class="shelf">
-            {% for game in shelf %}
-                <div class="game-card" onclick="window.location.href='{% url 'gamecard' id=game.id %}'">
-                    <img src="{{ game.image }}" alt="{{ game.name }}" class="game-card-cover">
-                    <div class="game-overlay">
-                        <div class="game-title">{{ game.name }}</div>
+
+
+
+    <!-- FILTER POPUP -->
+    <div id="filters-popup" class="filters-popup hidden">
+        <div class="filters-panel">
+            <h4>Filters</h4>
+
+            <!-- GENRE -->
+            <div class="filter-group">
+                <label>Genre</label>
+                <select id="filter-genre">
+                    <option value="">Any</option>
+                    <option value="Action">Action</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="RPG">RPG</option>
+                    <option value="Indie">Indie</option>
+                    <option value="Strategy">Strategy</option>
+                    <option value="Simulation">Simulation</option>
+                    <option value="Sports">Sports</option>
+                </select>
+            </div>
+
+            <!-- PRICE SLIDER -->
+            <div class="filter-group">
+                <label>Price ($)</label>
+                <div class="double-slider" id="price-slider"
+                     data-min="{{ price_min }}"
+                     data-max="{{ price_max }}">
+
+                    <div class="slider-track"></div>
+                    <input type="range" class="range-min" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_min }}">
+                    <input type="range" class="range-max" min="{{ price_min }}" max="{{ price_max }}" value="{{ price_max }}">
+
+                    <div class="slider-values">
+                        <span id="price-min-label"></span>
+                        <span id="price-max-label"></span>
                     </div>
                 </div>
-            {% endfor %}
+            </div>
+
+            <!-- SCORE SLIDER -->
+            <div class="filter-group">
+                <label>Positive feedback (%)</label>
+                <div class="double-slider" id="score-slider"
+                     data-min="{{ score_min }}"
+                     data-max="{{ score_max }}">
+
+                    <div class="slider-track"></div>
+                    <input type="range" class="range-min" min="{{ score_min }}" max="{{ score_max }}" value="{{ score_min }}">
+                    <input type="range" class="range-max" min="{{ score_min }}" max="{{ score_max }}" value="{{ score_max }}">
+
+                    <div class="slider-values">
+                        <span id="score-min-label"></span>
+                        <span id="score-max-label"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="filters-actions">
+                <button id="apply-filters">Apply</button>
+                <button id="clear-filters">Clear</button>
+                <button id="close-filters">Close</button>
+            </div>
         </div>
-    {% endfor %}
-</main>
+    </div>
+
+
+    <!-- SORT POPUP -->
+    <div id="sort-popup" class="sort-popup hidden">
+        <div class="sort-panel">
+            <h4>Sort by</h4>
+            <button class="sort-option" data-sort="price_asc">Price ↑</button>
+            <button class="sort-option" data-sort="price_desc">Price ↓</button>
+            <button class="sort-option" data-sort="name_asc">Name A–Z</button>
+            <button class="sort-option" data-sort="name_desc">Name Z–A</button>
+            <button class="sort-option" data-sort="score_desc">Popularity ↑</button>
+            <button class="sort-option" data-sort="score_asc">Popularity ↓</button>
+        </div>
+    </div>
+
+
+
+
+    <!-- GAME GRID -->
+    <main class="library-content" id="game-container">
+        <!-- JS will dynamically inject shelves -->
+    </main>
+
+    <!-- Overlay book -->
+    <div id="book-overlay-container"></div>
 
 </div>
+{% endblock %}
+
+
+
+
+
+{% block extra_js %}
+<script src="{% static 'js/library.js' %}"></script>
 {% endblock %}

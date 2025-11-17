@@ -1,101 +1,263 @@
-{% extends 'base.html' %}
 {% load static %}
-
-{% block title %}Game Detail - Open Book{% endblock %}
-
-{% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/game-detail.css' %}">
-{% endblock %}
 
-{% block content %}
 <div class="book-overlay">
-    <div class="open-book">
-        <!-- Book spine -->
-        <div class="book-spine"></div>
+  <div class="open-book">
 
-        <!-- Left page -->
-        <div class="book-page-left">
-            <div class="page-lines"></div>
-            <img src="https://via.placeholder.com/400x500/3b2a20/f5e1c8?text=Game+Cover" 
-                 alt="Game Cover" 
-                 class="game-cover">
-            
-            <div class="screenshot-gallery">
-                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=1" 
-                     alt="Screenshot 1" 
-                     class="screenshot-thumb">
-                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=2" 
-                     alt="Screenshot 2" 
-                     class="screenshot-thumb">
-                <img src="https://via.placeholder.com/80x60/3b2a20/f5e1c8?text=3" 
-                     alt="Screenshot 3" 
-                     class="screenshot-thumb">
-            </div>
-        </div>
+    <!-- Spine -->
+    <div class="book-spine"></div>
 
-        <!-- Right page -->
-        <div class="book-page-right">
-            <div class="page-lines"></div>
-            
-            <!-- Close bookmark -->
-            <div class="close-bookmark" title="Close">×</div>
+    <!-- LEFT PAGE -->
+    <div class="book-page-left">
+      <div class="page-lines"></div>
 
-            <h1 class="game-title">The Legend of Zelda: Breath of the Wild</h1>
+      <!-- Main image -->
+      <img 
+        id="mainCover"
+        src="{% if game.screenshots and game.screenshots.0.path_full %}{{ game.screenshots.0.path_full }}{% else %}{{ game.image }}{% endif %}" 
+        alt="{{ game.name }}" 
+        class="game-cover"
+        onerror="this.onerror=null; this.src='{{ game.fallback_image }}';"
+      >
 
-            <div class="game-meta">
-                <span class="meta-badge">Action-Adventure</span>
-                <span class="meta-badge">Open World</span>
-                <span class="meta-badge">2017</span>
-            </div>
+      {% if game.screenshots %}
+      <div class="screenshot-gallery">
+        {% for shot in game.screenshots|slice:":6" %}
+          <img 
+            src="{{ shot.path_thumbnail }}" 
+            data-full="{{ shot.path_full }}"
+            alt="Screenshot {{ forloop.counter }}"
+            class="screenshot-thumb"
+          >
+        {% endfor %}
+      </div>
+      {% endif %}
 
-            <div class="game-rating">
-                <span class="rating-stars">★★★★★</span>
-                <span>9.5/10</span>
-            </div>
-
-            <div class="game-description">
-                Step into a world of discovery, exploration, and adventure in The Legend of Zelda: 
-                Breath of the Wild, a boundary-breaking new game in the acclaimed series. Travel 
-                across vast fields, through forests, and to mountain peaks as you discover what has 
-                become of the kingdom of Hyrule in this stunning Open-Air Adventure.
-                <br><br>
-                Explore the wilds of Hyrule any way you like - climb up towers and mountain peaks 
-                in search of new destinations, then set your own path to get there and plunge into 
-                the wilderness. Along the way, you'll battle towering enemies, hunt wild beasts, and 
-                gather ingredients for the food and elixirs you'll need to sustain you on your journey.
-                <br><br>
-                More than 100 Shrines of Trials to discover and explore. Shrines dot the landscape, 
-                waiting to be discovered in any order you want. Search for them in various ways, and 
-                solve a variety of puzzles inside.
-            </div>
-
-            <div class="game-actions">
-                {% if request.session.user_id %}
-                    <button class="action-button">Add to Favorites ❤️</button>
-                    <button class="action-button secondary">Mark as Played ✓</button>
-                {% else %}
-                    <!-- Optional: prompt guest to log in -->
-                    <p><a href="{% url 'login' %}">Log in</a> to add to favorites or mark as played.</p>
-                {% endif %}
-            </div>
-
-        </div>
+      {% if game.trailer_url %}
+      <div class="trailer-container">
+        <h3 class="section-title">Trailer</h3>
+        <video class="trailer-video" controls>
+          <source src="{{ game.trailer_url }}" type="video/mp4">
+        </video>
+      </div>
+      {% endif %}
     </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
+    <!-- RIGHT PAGE -->
+    <div class="book-page-right">
+      <div class="page-lines"></div>
+
+      <div class="close-bookmark" title="Close">×</div>
+
+      <h1 class="game-title">{{ game.name }}</h1>
+
+      <div class="game-meta">
+        {% if game.genre %}
+          <span class="meta-badge">{{ game.genre }}</span>
+        {% endif %}
+        {% if game.release_date %}
+          <span class="meta-badge meta-neutral">Released: {{ game.release_date }}</span>
+        {% endif %}
+        {% if game.price %}
+          <span class="meta-badge meta-price">
+            {{ game.price }}
+            {% if game.discount and game.discount > 0 %}
+              <span class="discount-badge">-{{ game.discount }}%</span>
+            {% endif %}
+          </span>
+        {% endif %}
+      </div>
+
+      {% if game.platforms %}
+      <div class="platforms-list">
+        {% with p=game.platforms %}
+          <span class="platform-pill {% if not p.windows %}disabled{% endif %}">Windows</span>
+          <span class="platform-pill {% if not p.mac %}disabled{% endif %}">Mac</span>
+          <span class="platform-pill {% if not p.linux %}disabled{% endif %}">Linux</span>
+        {% endwith %}
+      </div>
+      {% endif %}
+
+      <div class="meta-section">
+        {% if game.developers %}
+          <div><span class="meta-label">Developer:</span> {{ game.developers|join:", " }}</div>
+        {% endif %}
+        {% if game.publishers %}
+          <div><span class="meta-label">Publisher:</span> {{ game.publishers|join:", " }}</div>
+        {% endif %}
+      </div>
+
+      {% if game.categories %}
+      <div class="tags-container">
+        {% for tag in game.categories %}
+          <span class="tag-badge">{{ tag }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="game-description">
+        {% if game.description %}
+          {{ game.description|safe }}
+        {% else %}
+          No description available.
+        {% endif %}
+      </div>
+
+      {% if game.long_description %}
+      <details class="long-description">
+        <summary>Read more about this game</summary>
+        <div class="long-description-body">
+          {{ game.long_description|safe }}
+        </div>
+      </details>
+      {% endif %}
+
+      {% if game.pc_requirements or game.mac_requirements or game.linux_requirements %}
+      <div class="requirements-section">
+        <h3 class="section-title">System Requirements</h3>
+        {% if game.pc_requirements %}
+        <details>
+          <summary>PC</summary>
+          <div class="requirements-body">
+            {{ game.pc_requirements|safe }}
+            {% if game.pc_recommend %}
+              <hr>
+              <strong>Recommended:</strong><br>
+              {{ game.pc_recommend|safe }}
+            {% endif %}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if game.mac_requirements %}
+        <details>
+          <summary>Mac</summary>
+          <div class="requirements-body">
+            {{ game.mac_requirements|safe }}
+          </div>
+        </details>
+        {% endif %}
+
+        {% if game.linux_requirements %}
+        <details>
+          <summary>Linux</summary>
+          <div class="requirements-body">
+            {{ game.linux_requirements|safe }}
+          </div>
+        </details>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="game-actions">
+        {% if request.session.user_id %}
+            <button id="btnFavorite" class="action-button">Add to Favorites ❤️</button>
+            <button id="btnPlayed" class="action-button secondary">Mark as Played ✓</button>
+        {% else %}
+            <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== SCRIPT 1: BOOK + IMAGES ========== -->
 <script>
-    // Close book when clicking bookmark
-    document.querySelector('.close-bookmark').addEventListener('click', function() {
-        window.location.href = "{% url 'index' %}";
+(function () {
+
+    document.body.classList.add('book-open');
+
+    const overlay = document.querySelector('.book-overlay');
+    const book = document.querySelector('.open-book');
+    const closeBtn = document.querySelector('.close-bookmark');
+
+    function closeBook() {
+        book.style.transition = "opacity 0.35s ease";
+        book.style.opacity = "0";
+
+        overlay.style.transition = "opacity 0.35s ease";
+        overlay.style.opacity = "0";
+
+        setTimeout(() => {
+            window.location.href = "{% url 'library' %}";
+        }, 350);
+    }
+
+    closeBtn.addEventListener("click", closeBook);
+
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeBook();
     });
 
-    // Close book when clicking outside the book
-    document.querySelector('.book-overlay').addEventListener('click', function(e) {
-        if (e.target === this) {
-            window.location.href = "{% url 'index' %}";
+    const mainCover = document.getElementById("mainCover");
+    const thumbs = document.querySelectorAll(".screenshot-thumb");
+    const originalCover = mainCover.src;
+
+    thumbs.forEach(t => {
+        const img = new Image();
+        img.src = t.dataset.full;
+    });
+
+    thumbs.forEach(thumb => {
+        thumb.addEventListener("click", () => {
+            mainCover.src = thumb.dataset.full;
+        });
+    });
+
+    mainCover.addEventListener("click", () => {
+        mainCover.src = originalCover;
+    });
+
+})();
+</script>
+
+
+<!-- ========== SCRIPT 2: FAVORITES + PLAYED ========== -->
+<script>
+const btnFav = document.getElementById("btnFavorite");
+const btnPlayed = document.getElementById("btnPlayed");
+
+function postJSON(url, data) {
+    return fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: JSON.stringify(data)
+    }).then(r => r.json());
+}
+
+btnFav?.addEventListener("click", () => {
+    postJSON("/api/add-favorite/", {
+        game_id: "{{ game.appid }}",          // FIXED
+        title: "{{ game.name|escapejs }}",    // FIXED
+        cover: "{{ game.image }}",            // FIXED
+        genre: "{{ game.genre }}",
+        year: "{{ game.release_date }}",
+    }).then(res => {
+        if (res.success) {
+            btnFav.textContent = "Added ✓";
+            btnFav.style.opacity = "0.6";
         }
     });
+});
+
+btnPlayed?.addEventListener("click", () => {
+    postJSON("/api/add-played/", {
+        game_id: "{{ game.appid }}",          // FIXED
+        title: "{{ game.name|escapejs }}",    // FIXED
+        cover: "{{ game.image }}",
+        genre: "{{ game.genre }}",
+        year: "{{ game.release_date }}",
+    }).then(res => {
+        if (res.success) {
+            btnPlayed.textContent = "Marked ✓";
+            btnPlayed.style.opacity = "0.6";
+        }
+    });
+});
 </script>
-{% endblock %}
+
