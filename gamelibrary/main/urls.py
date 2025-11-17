@@ -13,4 +13,6 @@ urlpatterns = [
     path("filter-games-api/", views.filter_games_api, name="filter_games_api"),
     path("api/add-favorite/", views.add_favorite, name="add_favorite"),
     path("api/add-played/", views.add_played, name="add_played"),
+    path("api/remove-from-favorite/", views.remove_from_favorites, name="remove_from_favorite"),
+    path("api/remove-from-played/", views.remove_from_played, name="remove_from_played"),
 ]
