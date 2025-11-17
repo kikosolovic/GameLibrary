@@ -111,16 +111,16 @@
                                 <span>{{ game.rating|default:"9.0" }}/10</span>
                             </div>
                         </div>
-                        <div class="game-item-actions">
-                            {% if game.game_id %}
-                                <a href="{% url 'game_detail' game.game_id %}" class="view-button">View</a>
-                            {% else %}
-                                <span class="view-button disabled">Invalid</span>
-                            {% endif %}
-                            <button class="remove-button" data-game-id="{{ game.game_id }}" data-type="favorite">
-                                Remove
-                            </button>
-                        </div>
+                            <div class="game-item-actions">
+                                {% if game.appid %}
+                                    <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
+                                {% else %}
+                                    <span class="view-button disabled">Invalid</span>
+                                {% endif %}
+                                <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="favorite">
+                                    Remove
+                                </button>
+                            </div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -151,8 +151,12 @@
                             </div>
                         </div>
                         <div class="game-item-actions">
-                            <a href="{% url 'game_detail' game.game_id %}" class="view-button">View</a>
-                            <button class="remove-button" data-game-id="{{ game.game_id }}" data-type="played">
+                            {% if game.appid %}
+                                <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
+                            {% else %}
+                                <span class="view-button disabled">Invalid</span>
+                            {% endif %}
+                            <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="played">
                                 Remove
                             </button>
                         </div>
