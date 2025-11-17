@@ -3,6 +3,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import check_password
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.db.models import Q
 import requests
 import json
 
@@ -46,9 +47,38 @@ def fetch_steamstore(appid):
 # ---------------------------------------------
 
 def library_view(request):
-    games = Game.objects.all()[:75]
-    shelves = [games[i:i+15] for i in range(0, len(games), 15)]
-    return render(request, 'library.html', {'shelves': shelves})
+    # Extract numeric prices from price string
+    def extract_price(p):
+        try:
+            return float(p.split()[0])
+        except Exception:
+            return None
+
+    games = Game.objects.all()
+
+    prices = [extract_price(g.price) for g in games if extract_price(g.price) is not None]
+    if prices:
+        price_min = int(min(prices))
+        price_max = int(max(prices))
+    else:
+        price_min = 0
+        price_max = 100
+
+    scores = list(games.values_list("score", flat=True))
+    scores = [s for s in scores if s is not None]
+    if scores:
+        score_min = int(min(scores))
+        score_max = int(max(scores))
+    else:
+        score_min = 0
+        score_max = 100
+
+    return render(request, "library.html", {
+        "price_min": price_min,
+        "price_max": price_max,
+        "score_min": score_min,
+        "score_max": score_max,
+    })
 
 
 # ---------------------------------------------
@@ -313,3 +343,71 @@ def search_view(request):
     games = Game.objects.filter(name__icontains=query)
 
     return render(request, 'search.html', {'query': query, 'games': games})
+
+def filter_games_api(request):
+    qs = Game.objects.all()
+
+    # Search
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(name__icontains=search)
+
+    # Genre (simple substring match)
+    genre = request.GET.get("genre")
+    if genre:
+        qs = qs.filter(genre__icontains=genre)
+
+    # Score filter
+    score_min = request.GET.get("score_min")
+    score_max = request.GET.get("score_max")
+    if score_min:
+        qs = qs.filter(score__gte=float(score_min))
+    if score_max:
+        qs = qs.filter(score__lte=float(score_max))
+
+    # Price filter (price is a string like "12.49 EUR" / "Free" / "Unavailable")
+    price_min = request.GET.get("price_min")
+    price_max = request.GET.get("price_max")
+
+    def extract_price(p):
+        try:
+            return float(p.split()[0])
+        except Exception:
+            return None
+
+    if price_min or price_max:
+        ids = []
+        for g in qs:
+            p = extract_price(g.price)
+            if p is None:
+                continue
+            if price_min and p < float(price_min):
+                continue
+            if price_max and p > float(price_max):
+                continue
+            ids.append(g.id)
+        qs = qs.filter(id__in=ids)
+
+    # Sort
+    sort = request.GET.get("sort")
+    if sort == "price_asc":
+        qs = sorted(qs, key=lambda g: extract_price(g.price) or 999999)
+    elif sort == "price_desc":
+        qs = sorted(qs, key=lambda g: extract_price(g.price) or -1, reverse=True)
+    elif sort == "name_asc":
+        qs = qs.order_by("name")
+    elif sort == "name_desc":
+        qs = qs.order_by("-name")
+    elif sort == "score_desc":
+        qs = qs.order_by("-score")
+    elif sort == "score_asc":
+        qs = qs.order_by("score")
+
+    # Build JSON
+    results = [{
+        "appid": g.appid,
+        "name": g.name,
+        "image": g.image or g.fallback_image,
+    } for g in qs]
+
+    return JsonResponse({"results": results})

@@ -17,6 +17,7 @@ GENDER_CHOICES = [
     ('F', 'Female'),
 ]
 
+
 class Users(models.Model):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=100, unique=True)
@@ -44,6 +45,16 @@ class Game(models.Model):
     # Text
     description = models.TextField(blank=True, null=True)
     detailed_description = models.TextField(blank=True, null=True)
+
+    # NEW: Price from Steam Store
+    price = models.CharField(max_length=50, blank=True, null=True)
+
+    # NEW: SteamSpy voting stats
+    positive = models.IntegerField(default=0)
+    negative = models.IntegerField(default=0)
+
+    # NEW: Calculated score (0–100)
+    score = models.FloatField(default=0.0)
 
     def __str__(self):
         return self.name

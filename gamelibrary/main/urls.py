@@ -8,4 +8,5 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('game/<int:appid>/', views.game_detail, name='game_detail'),
     path('logout/',views.logout_view, name='logout'),
+    path("filter-games-api/", views.filter_games_api, name="filter_games_api"),
 ]

@@ -14,30 +14,30 @@ body {
 
 /* Background */
 .library-background {
-  min-height: 100vh;
-  background: url('../images/background.png') no-repeat center center fixed;
-  background-size: cover;
-  display: flex;
-  flex-direction: column;
+    min-height: 100vh;
+    background: url('../images/background.png') no-repeat center center fixed;
+    background-size: cover;
+
+    display: flex !important;
+    flex-direction: row !important;   /* sidebar left, content right */
+    position: relative !important;
+    z-index: 0 !important;
+    padding-top: 0 !important;
 }
 
 /* Sidebar header */
 .library-header {
   display: flex;
   flex-direction: column;
-  align-items: left;
   padding: 1rem;
   gap: 1rem;
-  background-color: rgba(60, 40, 25, 0.9);
-  border-bottom: 3px solid #2d1b12;
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
   width: 220px;
+  background-color: rgba(60, 40, 25, 0.9);
   border-right: 3px solid #2d1b12;
+  position: relative !important;   /* IMPORTANTE: NO fixed */
   z-index: 10;
 }
+
 
 /* Search bar */
 .search-bar {
@@ -107,13 +107,13 @@ body {
 
 /* Shelves (main area starts after sidebar) */
 .library-content {
-  flex: 1;
-  margin-left: 220px;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  overflow-y: auto;
+    flex: 1;
+    margin-left: 0 !important;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    overflow-y: auto;
 }
 
 /* Shelf styling */
@@ -418,4 +418,198 @@ body.book-open .library-header {
 body.book-open {
   overflow: hidden;   /* ✅ keep this */
   /* ❌ remove padding-right override so JS can control it */
+}
+
+/* Cuando está hidden simplemente display none */
+.hidden {
+    display: none !important;
+}
+
+/* Importantísimo: evitar que shelves tapen popups */
+.shelf, .library-content, .library-header {
+    position: relative;
+    z-index: 1;
+}
+
+#filters-popup {
+    position: fixed !important;
+    top: 100px;
+    left: 240px;
+    width: 320px;
+    background: rgba(60, 40, 25, 0.97);
+    border: 3px solid #2d1b12;
+    border-radius: 12px;
+    padding: 20px;
+    z-index: 999999 !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    animation: slideIn 0.25s ease;
+}
+
+#filters-popup.hidden {
+    display: none !important;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+
+.filters-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.filter-group label {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #f5e1c8;
+}
+
+/* SELECT STYLE (old beautiful beige one) */
+.filter-group select {
+    appearance: none;
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(245, 225, 200, 0.95);
+    color: #3b2a20;
+    border: 2px solid #2d1b12;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    transition: 0.2s;
+}
+
+.filter-group select:hover {
+    background: #ffe8c7;
+}
+.filter-group select:focus {
+    outline: none;
+    background: #fff2d8;
+    box-shadow: 0 0 6px rgba(255,220,140,0.6);
+}
+
+/* DOUBLE SLIDER RESTORED (old design) */
+.double-slider {
+    position: relative;
+    width: 100%;
+    padding-top: 20px;
+    margin-bottom: 30px;
+}
+
+.double-slider .slider-track {
+    position: absolute;
+    top: 50%;
+    height: 6px;
+    background: #c9b59a;
+    border-radius: 4px;
+    width: 100%;
+    transform: translateY(-50%);
+}
+
+.double-slider input[type="range"] {
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    transform: translateY(-50%);
+    appearance: none;
+    background: none;
+    pointer-events: none;
+    height: 22px;
+}
+
+.double-slider input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: #ffcf7a;
+    border: 2px solid #2d1b12;
+    cursor: grab;
+    pointer-events: auto;
+}
+
+.double-slider .slider-values {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 35px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ffe8c7;
+    text-shadow: 1px 1px 3px #000;
+}
+
+/* FILTER BUTTONS */
+.filters-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+.filters-actions button {
+    background: #a0653c;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 30%;
+}
+.filters-actions button:hover {
+    background: #c07845;
+}
+
+/* SORT POPUP — OLD DESIGN */
+#sort-popup {
+    position: fixed !important;
+    left: 240px !important;
+    z-index: 999999 !important;
+    animation: slideIn 0.25s ease;
+}
+
+#sort-popup.hidden {
+    display: none !important;
+}
+
+.sort-panel {
+    background: rgba(60, 40, 25, 0.97);
+    border: 3px solid #2d1b12;
+    border-radius: 10px;
+    width: 180px;
+    padding: 10px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.6),
+                0 0 12px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sort-panel h4 {
+    text-align: center;
+    color: #f5e1c8;
+}
+
+.sort-option {
+    background: #a0653c;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+.sort-option:hover {
+    background: #c07845;
+}
+
+.smooth-refresh {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.smooth-refresh.show {
+    opacity: 1;
+    transform: translateY(0);
 }

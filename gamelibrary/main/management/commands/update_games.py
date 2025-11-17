@@ -2,11 +2,35 @@ import requests
 from django.core.management.base import BaseCommand
 from main.models import Game
 
+
 class Command(BaseCommand):
-    help = "Fast update: fetch 1000 popular Steam games WITHOUT Steam Store API slow calls."
+    help = "Enhanced update: fetch SteamSpy + SteamStore data, including scores and prices."
+
+    def fetch_steamstore(self, appid):
+        """Fetch detailed game info from Steam Store API."""
+        url = f"https://store.steampowered.com/api/appdetails?appids={appid}&l=english&cc=us"
+        try:
+            r = requests.get(url, timeout=10)
+            data = r.json()
+
+            if not data.get(str(appid), {}).get("success"):
+                return None
+
+            return data[str(appid)]["data"]
+        except:
+            return None
+
+    def fetch_steamspy(self, appid):
+        """Fetch basic numeric stats from SteamSpy appdetails."""
+        url = f"https://steamspy.com/api.php?request=appdetails&appid={appid}"
+        try:
+            r = requests.get(url, timeout=10)
+            return r.json()
+        except:
+            return None
 
     def handle(self, *args, **options):
-        self.stdout.write("🟢 FAST FETCH: SteamSpy lists...")
+        self.stdout.write("🟢 ENHANCED UPDATE: SteamSpy lists...")
 
         endpoints = [
             "top100in2weeks",
@@ -17,7 +41,7 @@ class Command(BaseCommand):
 
         all_games = {}
 
-        # Fetch 4 lists (very fast)
+        # Fetch basic lists from SteamSpy
         for endpoint in endpoints:
             url = f"https://steamspy.com/api.php?request={endpoint}"
             try:
@@ -27,41 +51,69 @@ class Command(BaseCommand):
                     all_games.update(data)
                     self.stdout.write(f"✅ {endpoint}: {len(data)} games")
                 else:
-                    self.stdout.write(f"⚠️ Error {r.status_code} loading {endpoint}")
+                    self.stdout.write(f"⚠️ Error loading {endpoint}")
             except Exception as e:
                 self.stdout.write(f"⚠️ Failed {endpoint}: {e}")
 
-        self.stdout.write(f"🧩 Total unique SteamSpy games: {len(all_games)}")
-
-        # Clear old DB
+        # Clear DB
         Game.objects.all().delete()
         self.stdout.write("🧹 Old games removed.")
 
         saved = 0
-        skipped = 0
 
-        # Loop games (no API calls → super fast)
         for g in list(all_games.values())[:1200]:
             appid = g.get("appid")
             name = g.get("name", "").strip()
-
             if not appid or not name:
-                skipped += 1
                 continue
 
-            # Primary tall library cover
-            cover = f"https://steamcdn-a.akamaihd.net/steam/apps/{appid}/library_600x900_2x.jpg"
+            # -------------------------------------------------------
+            # 1. SteamSpy appdetails (positive/negative)
+            # -------------------------------------------------------
+            steamspy = self.fetch_steamspy(appid)
+            positive = steamspy.get("positive", 0) if steamspy else 0
+            negative = steamspy.get("negative", 0) if steamspy else 0
 
-            # Always-available fallback (the header)
+            # score calculation
+            if positive + negative > 0:
+                score = round((positive * 100) / (positive + negative), 2)
+            else:
+                score = 0.0
+
+            # -------------------------------------------------------
+            # 2. SteamStore info (real genres + price)
+            # -------------------------------------------------------
+            store = self.fetch_steamstore(appid)
+
+            # genre
+            if store and store.get("genres"):
+                genre = ", ".join(g["description"] for g in store["genres"])
+            else:
+                genre = "Unknown"
+
+            # price
+            price_info = store.get("price_overview") if store else None
+            if price_info:
+                price = f"{price_info['final']/100:.2f} {price_info['currency']}"
+            else:
+                price = "Free" if store and store.get("is_free") else "Unavailable"
+
+            # images
+            cover = f"https://steamcdn-a.akamaihd.net/steam/apps/{appid}/library_600x900_2x.jpg"
             fallback_cover = f"https://steamcdn-a.akamaihd.net/steam/apps/{appid}/header.jpg"
 
+            # Save to DB
             Game.objects.update_or_create(
                 appid=appid,
                 defaults={
                     "name": name,
-                    "genre": g.get("genre", "Unknown"),
+                    "genre": genre,
                     "image": cover,
                     "fallback_image": fallback_cover,
+                    "price": price,
+                    "positive": positive,
+                    "negative": negative,
+                    "score": score,
                 }
             )
 
@@ -72,5 +124,4 @@ class Command(BaseCommand):
             if saved >= 1000:
                 break
 
-        self.stdout.write(self.style.SUCCESS(f"✅ FAST UPDATE COMPLETE — {saved} games saved."))
-        self.stdout.write(self.style.WARNING(f"🚫 Skipped: {skipped} invalid items."))
+        self.stdout.write(self.style.SUCCESS(f"✅ ENHANCED UPDATE COMPLETE — {saved} games saved."))
