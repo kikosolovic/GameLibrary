@@ -59,19 +59,6 @@
                     <p class="detail-value">{{ user.bio }}</p>
                 </div>
                 {% endif %}
-
-                <!-- Steam connect / sync -->
-                <div class="detail-item">
-                    <span class="detail-label">Steam:</span>
-                    <span class="detail-value">
-                        {% if steam_profile %}
-                            Linked ({{ steam_profile.steamid }})
-                            <a href="{% url 'steam_sync' %}" class="action-button">Sync Steam Data</a>
-                        {% else %}
-                            <a href="{% url 'steam_login' %}" class="action-button">Connect Steam</a>
-                        {% endif %}
-                    </span>
-                </div>
                 
                 <div class="profile-actions">
                     <!-- <button class="action-button edit-profile">
@@ -116,47 +103,24 @@
                         <div class="game-item-info">
                             <h3 class="game-item-title">{{ game.title }}</h3>
                             <div class="game-item-meta">
-
-                                {# === GENRE === #}
-                                {% with g=game.genre|default_if_none:"" rg=game.real_game.genre|default_if_none:"" %}
-
-                                    {% if g and g != "Unknown" and g != "" %}
-                                        <span class="meta-badge mini">{{ g }}</span>
-
-                                    {% elif rg and rg != "Unknown" and rg != "" %}
-                                        <span class="meta-badge mini">{{ rg }}</span>
-
-                                    {% else %}
-                                        <span class="meta-badge mini">Unknown</span>
-                                    {% endif %}
-
-                                {% endwith %}
-
-                                {# === YEAR === #}
-                                {% if game.year %}
-                                    <span class="meta-badge mini">{{ game.year }}</span>
-                                {% else %}
-                                    {% if game.real_game and game.real_game.release_date %}
-                                        <span class="meta-badge mini">{{ game.real_game.release_date }}</span>
-                                    {% endif %}
-                                {% endif %}
-
+                                <span class="meta-badge mini">{{ game.genre }}</span>
+                                <span class="meta-badge mini">{{ game.year }}</span>
                             </div>
                             <div class="game-item-rating">
                                 <span class="rating-stars-mini">★★★★★</span>
                                 <span>{{ game.rating|default:"9.0" }}/10</span>
                             </div>
                         </div>
-                        <div class="game-item-actions">
-                            {% if game.appid %}
-                                <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
-                            {% else %}
-                                <span class="view-button disabled">Invalid</span>
-                            {% endif %}
-                            <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="favorite">
-                                Remove
-                            </button>
-                        </div>
+                            <div class="game-item-actions">
+                                {% if game.appid %}
+                                    <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
+                                {% else %}
+                                    <span class="view-button disabled">Invalid</span>
+                                {% endif %}
+                                <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="favorite">
+                                    Remove
+                                </button>
+                            </div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -182,33 +146,9 @@
                         <div class="game-item-info">
                             <h3 class="game-item-title">{{ game.title }}</h3>
                             <div class="game-item-meta">
-
-                            {# ===== GENRE ===== #}
-                            {% with g=game.genre|default_if_none:"" rg=game.real_game.genre|default_if_none:"" %}
-                                {% if g and g != "None" and g != "Unknown" %}
-                                    <span class="meta-badge mini">{{ g }}</span>
-
-                                {% elif rg and rg != "None" and rg != "Unknown" %}
-                                    <span class="meta-badge mini">{{ rg }}</span>
-
-                                {% else %}
-                                    <span class="meta-badge mini">Unknown</span>
-                                {% endif %}
-                            {% endwith %}
-
-
-                        {# ===== YEAR ===== #}
-                        {% with y=game.year|default_if_none:"" ry=game.real_game.release_date|default_if_none:"" %}
-                            {% if y and y != "None" %}
-                                <span class="meta-badge mini">{{ y }}</span>
-
-                            {% elif ry and ry != "None" %}
-                                <span class="meta-badge mini">{{ ry }}</span>
-
-                            {% endif %}
-                        {% endwith %}
-
-                        </div>
+                                <span class="meta-badge mini">{{ game.genre }}</span>
+                                <span class="meta-badge mini">{{ game.year }}</span>
+                            </div>
                         </div>
                         <div class="game-item-actions">
                             {% if game.appid %}
@@ -261,6 +201,11 @@ document.querySelector('.book-overlay').addEventListener('click', function(e) {
     if (e.target === this) window.location.href = "{% url 'library' %}";
 });
 
+// /* Edit profile */
+// document.querySelector('.edit-profile').addEventListener('click', function() {
+//     window.location.href = "{% url 'edit_profile' %}";
+// });
+
 /* Logout */
 document.querySelector('.logout').addEventListener('click', function() {
     if (confirm('Are you sure you want to logout?')) {
@@ -268,7 +213,10 @@ document.querySelector('.logout').addEventListener('click', function() {
     }
 });
 
-/* Remove game: animate item out, update counter, show empty state */
+/* Remove game: animate item out, update counter, show empty state
+   - Uses transitionend where supported.
+   - Uses timeout fallback so item is removed even if transitionend doesn't fire.
+*/
 document.querySelectorAll('.remove-button').forEach(button => {
     button.addEventListener('click', async function() {
         const gameId = this.dataset.gameId;
@@ -292,27 +240,35 @@ document.querySelectorAll('.remove-button').forEach(button => {
                 return;
             }
 
+            // animate removal
             const item = this.closest('.game-item');
             if (!item) return;
 
+            // measure and lock the height so transition to 0 works
             const rect = item.getBoundingClientRect();
             item.style.height = rect.height + 'px';
             item.style.minHeight = rect.height + 'px';
 
+            // Force reflow then add class to trigger CSS transition
+            // (reading offsetHeight forces layout)
             void item.offsetHeight;
             item.classList.add('removing');
 
+            // cleanup helper (only runs once)
             let cleaned = false;
             const cleanup = () => {
                 if (cleaned) return;
                 cleaned = true;
 
+                // remove listeners and inline sizing
+                item.removeEventListener('transitionend', onEnd);
                 item.style.height = '';
                 item.style.minHeight = '';
 
                 const parentList = item.parentElement;
                 item.remove();
 
+                // update counters (assumes first .stat-number is favorites, second is played)
                 const statEls = document.querySelectorAll('.stat-number');
                 if (statEls.length >= 2) {
                     if (type === 'favorite') {
@@ -322,6 +278,7 @@ document.querySelectorAll('.remove-button').forEach(button => {
                     }
                 }
 
+                // if list empty show empty-state
                 if (parentList && !parentList.querySelector('.game-item')) {
                     const empty = document.createElement('div');
                     empty.className = 'empty-state';
@@ -334,13 +291,14 @@ document.querySelectorAll('.remove-button').forEach(button => {
                 }
             };
 
+            // transitionend listener (wait for height change)
             function onEnd(e) {
                 if (e.propertyName !== 'height') return;
-                item.removeEventListener('transitionend', onEnd);
                 cleanup();
             }
             item.addEventListener('transitionend', onEnd);
 
+            // fallback: ensure cleanup after transition duration if transitionend doesn't fire
             const FALLBACK_MS = 500;
             setTimeout(cleanup, FALLBACK_MS);
 
