@@ -1,4 +1,6 @@
-/* General Reset */
+/* =======================
+   General Reset
+======================= */
 * {
   margin: 0;
   padding: 0;
@@ -12,34 +14,20 @@ body {
   overflow-x: hidden;
 }
 
-/* Background */
-.library-background {
-    min-height: 100vh;
-    background: url('../images/background.png') no-repeat center center fixed;
-    background-size: cover;
-    margin-left: 220px !important;
-    display: flex !important;
-    flex-direction: row !important;   /* sidebar left, content right */
-    position: relative !important;
-    z-index: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Sidebar header */
+/* =======================
+   Sidebar / Header
+======================= */
 .library-header {
   display: flex;
   flex-direction: column;
   padding: 1rem;
   gap: 1rem;
   width: 230px;
-
   border-right: 3px solid #2d1b12;
 
-  /* 🔥 Sidebar — now slightly transparent */
   background-color: rgba(60, 40, 25, 0.65) !important;
   backdrop-filter: blur(3px);
 
-  /* 🔥 Keep sidebar fixed */
   position: fixed !important;
   top: 0;
   left: 0;
@@ -47,7 +35,6 @@ body {
   overflow-y: auto;
   z-index: 5000 !important;
 }
-
 
 /* Search bar */
 .search-bar {
@@ -115,40 +102,77 @@ body {
   color: #2d1b12;
 }
 
-/* Shelves (main area starts after sidebar) */
-.library-content {
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    overflow-y: auto;
+/* =======================
+   Background + Layout
+======================= */
+.library-background {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+
+  min-height: 100vh;
+  height: 100vh;
+  background: url('../images/background.png') no-repeat center center fixed;
+  background-size: cover;
+
+  padding-left: 230px;   /* espacio para el sidebar fijo */
+  overflow: hidden;      /* scroll vertical solo en .library-content */
+
+  z-index: 0;
 }
 
-/* Shelf styling */
+/* Contenido central (las estanterías) */
+.library-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  padding: 2rem;
+  overflow-y: auto;   /* aquí se scrollean los juegos */
+  overflow-x: hidden;
+}
+
+/* =======================
+   Shelves
+======================= */
 .shelf {
-  height: 300px;
+  height: 300px !important;              /* altura fija */
   width: 100%;
   background: rgba(60, 40, 25, 0.7);
   border: 3px solid #2d1b12;
   border-radius: 10px;
   box-shadow: inset 0 5px 15px rgba(0, 0, 0, 0.4);
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  gap: 1.2rem;
-  padding: 1rem;
-  scroll-behavior: smooth;
-  align-items: center;
+
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
   justify-content: flex-start;
+
+  gap: 1.2rem;
+  padding: 1rem !important;
+
+  overflow-y: hidden !important;   /* NO scroll vertical */
+  overflow-x: auto !important;     /* solo horizontal */
+  scroll-behavior: smooth;
+
+  scrollbar-color: #a0653c rgba(43, 25, 15, 0.9);
+  scrollbar-width: thin;
 }
 
-/* === Game Cards === */
+/* =======================
+   Game Cards + Hover Overlay (ANIMACIÓN VIEJA)
+======================= */
 .game-card {
-  position: relative;
+  position: relative !important;
   display: inline-block;
   cursor: pointer;
   transition: transform 0.25s ease;
   flex: 0 0 auto;
+  overflow: hidden !important;
+  margin: 0;
+  padding: 0;
 }
 
 .game-title-link {
@@ -161,16 +185,36 @@ body {
 }
 
 .game-card-cover {
-  width: 155px;
-  height: 250px;
-  object-fit: cover;
+  width: 155px !important;
+  height: 250px !important;
+  object-fit: cover !important;
   border-radius: 8px;
   border: 2px solid #2d1b12;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
   background-color: #1a0f07;
 }
 
+/* === Hover overlay (como el código viejo) === */
+.game-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 10, 5, 0.85);
+  border-radius: 8px;
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.game-card:hover .game-overlay {
+  opacity: 1;
+}
 
 .game-overlay .game-title {
   color: #f5e1c8;
@@ -181,7 +225,9 @@ body {
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
 }
 
-/* === Scrollbar === */
+/* =======================
+   Scrollbars
+======================= */
 .shelf::-webkit-scrollbar {
   height: 12px;
 }
@@ -199,6 +245,7 @@ body {
 .shelf::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #e1b372, #9b5e31);
 }
+
 .library-content::-webkit-scrollbar {
   width: 10px;
 }
@@ -209,12 +256,10 @@ body {
 .library-content::-webkit-scrollbar-thumb:hover {
   background: rgba(192, 120, 69, 1);
 }
-.shelf {
-  scrollbar-color: #a0653c rgba(43, 25, 15, 0.9);
-  scrollbar-width: thin;
-}
 
-/* === Overlay + Book === */
+/* =======================
+   Book Overlay (game detail)
+======================= */
 body.book-open {
   overflow: hidden;
 }
@@ -268,12 +313,13 @@ body.book-open {
   }
 }
 
-/* === Page styles (same as before) === */
+/* === Book pages === */
 .book-spine {
   width: 25px;
   background: linear-gradient(to right, #2d1b12, #4a3020);
   box-shadow: inset -5px 0 8px rgba(0, 0, 0, 0.6);
 }
+
 .book-page-left,
 .book-page-right {
   flex: 1;
@@ -284,6 +330,7 @@ body.book-open {
   color: #3b2a20;
   font-family: "Georgia", serif;
 }
+
 .page-lines::before {
   content: "";
   position: absolute;
@@ -299,10 +346,12 @@ body.book-open {
   );
   pointer-events: none;
 }
+
 .book-page-left {
   border-right: 2px solid #d4b790;
   box-shadow: inset -4px 0 8px rgba(0, 0, 0, 0.1);
 }
+
 .game-cover {
   width: 100%;
   height: 400px;
@@ -311,11 +360,13 @@ body.book-open {
   margin-bottom: 1rem;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
 }
+
 .screenshot-gallery {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
 }
+
 .screenshot-thumb {
   width: 80px;
   height: 60px;
@@ -327,9 +378,11 @@ body.book-open {
 .screenshot-thumb:hover {
   transform: scale(1.1);
 }
+
 .book-page-right {
   padding: 2rem 2.5rem;
 }
+
 .close-bookmark {
   position: absolute;
   top: 10px;
@@ -345,6 +398,7 @@ body.book-open {
   transform: scale(1.2);
   color: #a0653c;
 }
+
 .game-title {
   font-size: 2rem;
   font-weight: bold;
@@ -395,214 +449,197 @@ body.book-open {
   background: #6b4a32;
 }
 
+/* =======================
+   Global helpers
+======================= */
 .library-content,
 .library-header {
-  transition: filter 0.35s ease;   /* 🔹 starting state */
-}
-/* Prevent page shift when overlay opens */
-body.book-open {
-  overflow: hidden;   /* ✅ keep this */
-  /* ❌ remove padding-right override so JS can control it */
+  transition: filter 0.35s ease;
 }
 
-/* Cuando está hidden simplemente display none */
 .hidden {
-    display: none !important;
+  display: none !important;
 }
 
-/* Importantísimo: evitar que shelves tapen popups */
-.shelf, .library-content, .library-header {
-    position: relative;
-    z-index: 1;
+/* Evitar que shelves tapen popups */
+.shelf,
+.library-content,
+.library-header {
+  position: relative;
+  z-index: 1;
 }
 
+/* =======================
+   Filters Popup
+======================= */
 #filters-popup {
-    position: fixed !important;
-    top: 100px;
-    left: 240px;
-    width: 320px;
-    background: rgba(60, 40, 25, 0.97);
-    border: 3px solid #2d1b12;
-    border-radius: 12px;
-    padding: 20px;
-    z-index: 999999 !important;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-    animation: slideIn 0.25s ease;
+  position: fixed !important;
+  top: 100px;
+  left: 240px;
+  width: 320px;
+  background: rgba(60, 40, 25, 0.97);
+  border: 3px solid #2d1b12;
+  border-radius: 12px;
+  padding: 20px;
+  z-index: 999999 !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+  animation: slideIn 0.25s ease;
 }
 
 #filters-popup.hidden {
-    display: none !important;
+  display: none !important;
 }
 
 @keyframes slideIn {
-    from { transform: translateX(-20px); opacity: 0; }
-    to   { transform: translateX(0); opacity: 1; }
+  from { transform: translateX(-20px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
 }
 
 .filters-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .filter-group label {
-    font-weight: bold;
-    margin-bottom: 4px;
-    color: #f5e1c8;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #f5e1c8;
 }
 
-/* SELECT STYLE (old beautiful beige one) */
+/* Select estilo beige lindo */
 .filter-group select {
-    appearance: none;
-    width: 100%;
-    padding: 8px 10px;
-    background: rgba(245, 225, 200, 0.95);
-    color: #3b2a20;
-    border: 2px solid #2d1b12;
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    font-weight: bold;
-    box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
-    transition: 0.2s;
+  appearance: none;
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(245, 225, 200, 0.95);
+  color: #3b2a20;
+  border: 2px solid #2d1b12;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+  transition: 0.2s;
 }
-
 .filter-group select:hover {
-    background: #ffe8c7;
+  background: #ffe8c7;
 }
 .filter-group select:focus {
-    outline: none;
-    background: #fff2d8;
-    box-shadow: 0 0 6px rgba(255,220,140,0.6);
+  outline: none;
+  background: #fff2d8;
+  box-shadow: 0 0 6px rgba(255,220,140,0.6);
 }
 
-/* DOUBLE SLIDER RESTORED (old design) */
+/* Double slider */
 .double-slider {
-    position: relative;
-    width: 100%;
-    padding-top: 20px;
-    margin-bottom: 30px;
+  position: relative;
+  width: 100%;
+  padding-top: 20px;
+  margin-bottom: 30px;
 }
-
 .double-slider .slider-track {
-    position: absolute;
-    top: 50%;
-    height: 6px;
-    background: #c9b59a;
-    border-radius: 4px;
-    width: 100%;
-    transform: translateY(-50%);
+  position: absolute;
+  top: 50%;
+  height: 6px;
+  background: #c9b59a;
+  border-radius: 4px;
+  width: 100%;
+  transform: translateY(-50%);
 }
-
 .double-slider input[type="range"] {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    transform: translateY(-50%);
-    appearance: none;
-    background: none;
-    pointer-events: none;
-    height: 22px;
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  transform: translateY(-50%);
+  appearance: none;
+  background: none;
+  pointer-events: none;
+  height: 22px;
 }
-
 .double-slider input[type="range"]::-webkit-slider-thumb {
-    appearance: none;
-    height: 18px;
-    width: 18px;
-    border-radius: 50%;
-    background: #ffcf7a;
-    border: 2px solid #2d1b12;
-    cursor: grab;
-    pointer-events: auto;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #ffcf7a;
+  border: 2px solid #2d1b12;
+  cursor: grab;
+  pointer-events: auto;
 }
-
 .double-slider .slider-values {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 35px;
-    font-size: 1rem;
-    font-weight: bold;
-    color: #ffe8c7;
-    text-shadow: 1px 1px 3px #000;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 35px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ffe8c7;
+  text-shadow: 1px 1px 3px #000;
 }
 
-/* FILTER BUTTONS */
-.filters-actions {
-    display: flex;
-    justify-content: space-between;
-}
-
-.filters-actions button {
-    background: #a0653c;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 30%;
-}
-.filters-actions button:hover {
-    background: #c07845;
-}
-
-/* SORT POPUP — OLD DESIGN */
+/* =======================
+   Sort Popup
+======================= */
 #sort-popup {
-    position: fixed !important;
-    left: 240px !important;
-    z-index: 999999 !important;
-    animation: slideIn 0.25s ease;
+  position: fixed !important;
+  left: 240px !important;
+  z-index: 999999 !important;
+  animation: slideIn 0.25s ease;
 }
 
 #sort-popup.hidden {
-    display: none !important;
+  display: none !important;
 }
 
 .sort-panel {
-    background: rgba(60, 40, 25, 0.97);
-    border: 3px solid #2d1b12;
-    border-radius: 10px;
-    width: 180px;
-    padding: 10px;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.6),
-                0 0 12px rgba(0,0,0,0.8);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  background: rgba(60, 40, 25, 0.97);
+  border: 3px solid #2d1b12;
+  border-radius: 10px;
+  width: 180px;
+  padding: 10px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.6),
+              0 0 12px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .sort-panel h4 {
-    text-align: center;
-    color: #f5e1c8;
+  text-align: center;
+  color: #f5e1c8;
 }
 
 .sort-option {
-    background: #a0653c;
-    color: white;
-    padding: 5px 8px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    text-align: left;
+  background: #a0653c;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
 }
 .sort-option:hover {
-    background: #c07845;
+  background: #c07845;
 }
 
+/* =======================
+   Otros
+======================= */
 .smooth-refresh {
-    opacity: 0;
-    transform: translateY(10px);
-    transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+.smooth-refresh.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.smooth-refresh.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-/* NEW: fade out UI when book opens */
+/* Fade out UI cuando se abre el libro */
 body.book-open .library-header,
 body.book-open .library-content {
-    opacity: 0;
-    filter: none !important;
-    transition: opacity 0.45s ease-out !important;
-    pointer-events: none;
+  opacity: 0;
+  filter: none !important;
+  transition: opacity 0.45s ease-out !important;
+  pointer-events: none;
 }
