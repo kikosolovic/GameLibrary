@@ -1,10 +1,32 @@
 {% load static %}
+<style>
+  .achievement-icon {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      border-radius: 6px;
+  }
+
+  details.achievements-section summary {
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 10px;
+  }
+
+  .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+  }
+</style>
+
 <link rel="stylesheet" href="{% static 'css/game-detail.css' %}">
 
 <div class="book-overlay">
   <div class="open-book">
 
-    <!-- Spine -->
     <div class="book-spine"></div>
 
     <!-- LEFT PAGE -->
@@ -115,6 +137,7 @@
       {% if game.pc_requirements or game.mac_requirements or game.linux_requirements %}
       <div class="requirements-section">
         <h3 class="section-title">System Requirements</h3>
+
         {% if game.pc_requirements %}
         <details>
           <summary>PC</summary>
@@ -149,6 +172,38 @@
       </div>
       {% endif %}
 
+      <!-- Achievements Progress -->
+      {% if total_achievements %}
+      <div class="achievement-progress-wrapper">
+          <h3>{{ unlocked_count }} / {{ total_achievements }} achievements unlocked</h3>
+          <div class="circular-progress" style="--value: {{ progress }};">
+              <span>{{ progress }}%</span>
+          </div>
+      </div>
+      {% endif %}
+
+      <!-- Achievements Collapsible List -->
+      {% if achievements %}
+      <details class="achievements-section">
+        <summary>Achievements</summary>
+
+        <div class="achievements-grid">
+          {% for a in achievements %}
+          <div class="achievement {% if a.id in unlocked_ids %}unlocked{% endif %}">
+              <img 
+                src="{% if a.id in unlocked_ids %}{{ a.icon }}{% else %}{{ a.icon_gray }}{% endif %}"
+                class="achievement-icon"
+                alt="{{ a.display_name }}"
+              >
+              <h4>{{ a.display_name }}</h4>
+              <p>{{ a.description }}</p>
+          </div>
+          {% endfor %}
+        </div>
+
+      </details>
+      {% endif %}
+
       <div class="game-actions">
         {% if request.session.user_id %}
             <button id="btnFavorite" class="action-button">Add to Favorites ❤️</button>
@@ -162,22 +217,32 @@
   </div>
 </div>
 
-
-<!-- ========== SCRIPT 1: BOOK + IMAGES ========== -->
 <script>
+// ===========================
+//  BOOK OPEN / CLOSE SYSTEM
+// ===========================
 (function () {
-
-    document.body.classList.add('book-open');
 
     const overlay = document.querySelector('.book-overlay');
     const book = document.querySelector('.open-book');
     const closeBtn = document.querySelector('.close-bookmark');
 
-    function closeBook() {
-        book.style.transition = "opacity 0.35s ease";
-        book.style.opacity = "0";
+    if (!overlay || !book || !closeBtn) {
+        console.error("ERROR: overlay/book/closeBtn not found");
+        return;
+    }
 
+    // Animación al abrir
+    document.body.classList.add('book-open');
+    overlay.style.opacity = "1";
+    book.style.opacity = "1";
+
+    function closeBook() {
+        book.classList.add("closing");
+        book.style.transition = "opacity 0.35s ease";
         overlay.style.transition = "opacity 0.35s ease";
+
+        book.style.opacity = "0";
         overlay.style.opacity = "0";
 
         setTimeout(() => {
@@ -185,79 +250,23 @@
         }, 350);
     }
 
-    closeBtn.addEventListener("click", closeBook);
+    // Click en la X
+    closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeBook();
+    });
 
+    // Click fuera del libro
     overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) closeBook();
+        if (e.target === overlay) {
+            closeBook();
+        }
     });
 
-    const mainCover = document.getElementById("mainCover");
-    const thumbs = document.querySelectorAll(".screenshot-thumb");
-    const originalCover = mainCover.src;
-
-    thumbs.forEach(t => {
-        const img = new Image();
-        img.src = t.dataset.full;
-    });
-
-    thumbs.forEach(thumb => {
-        thumb.addEventListener("click", () => {
-            mainCover.src = thumb.dataset.full;
-        });
-    });
-
-    mainCover.addEventListener("click", () => {
-        mainCover.src = originalCover;
+    // ESC key
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") closeBook();
     });
 
 })();
 </script>
-
-
-<!-- ========== SCRIPT 2: FAVORITES + PLAYED ========== -->
-<script>
-const btnFav = document.getElementById("btnFavorite");
-const btnPlayed = document.getElementById("btnPlayed");
-
-function postJSON(url, data) {
-    return fetch(url, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token }}",
-        },
-        body: JSON.stringify(data)
-    }).then(r => r.json());
-}
-
-btnFav?.addEventListener("click", () => {
-    postJSON("/api/add-favorite/", {
-        game_id: "{{ game.appid }}",          // FIXED
-        title: "{{ game.name|escapejs }}",    // FIXED
-        cover: "{{ game.image }}",            // FIXED
-        genre: "{{ game.genre }}",
-        year: "{{ game.release_date }}",
-    }).then(res => {
-        if (res.success) {
-            btnFav.textContent = "Added ✓";
-            btnFav.style.opacity = "0.6";
-        }
-    });
-});
-
-btnPlayed?.addEventListener("click", () => {
-    postJSON("/api/add-played/", {
-        game_id: "{{ game.appid }}",          // FIXED
-        title: "{{ game.name|escapejs }}",    // FIXED
-        cover: "{{ game.image }}",
-        genre: "{{ game.genre }}",
-        year: "{{ game.release_date }}",
-    }).then(res => {
-        if (res.success) {
-            btnPlayed.textContent = "Marked ✓";
-            btnPlayed.style.opacity = "0.6";
-        }
-    });
-});
-</script>
-

@@ -34,8 +34,9 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: transparent;
+  background: rgba(0,0,0,0.45);   /* ✔ permite clic y da oscurecido */
   z-index: 99999 !important;
+  cursor: pointer;               /* ✔ indica clickeable */
 }
 
 
@@ -458,3 +459,27 @@ body.book-open .library-content {
 .open-book.closing {
     pointer-events: none;
 }
+
+.circular-progress {
+    --size: 100px;
+    --track: #ccc;
+    --progress: #4caf50;
+
+    width: var(--size);
+    height: var(--size);
+    border-radius: 50%;
+    background: conic-gradient(var(--progress) calc(var(--value) * 1%), var(--track) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
+}
+.circular-progress span {
+    position: relative;
+    z-index: 2;
+}
+
+

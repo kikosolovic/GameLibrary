@@ -15,4 +15,7 @@ urlpatterns = [
     path("api/add-played/", views.add_played, name="add_played"),
     path("api/remove-from-favorite/", views.remove_from_favorites, name="remove_from_favorite"),
     path("api/remove-from-played/", views.remove_from_played, name="remove_from_played"),
+    path("steam/login/", views.steam_login, name="steam_login"),
+    path("steam/return/", views.steam_return, name="steam_return"),
+    path("steam/sync/", views.steam_sync, name="steam_sync"),
 ]
