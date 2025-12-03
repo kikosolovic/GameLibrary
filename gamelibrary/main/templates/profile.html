@@ -86,7 +86,20 @@
                 <button class="tab-button" data-tab="played">
                      Played Games
                 </button>
+                {% if user.role == "admin" %}
+                <button class="tab-button" data-tab="users">Users</button>
+                {% endif %}
             </div>
+
+            <!-- Users List (only for admin) -->
+            {% if user.role == "admin" %}
+            <div class="games-list" id="users-list" style="display: none;">
+                <div id="users-container">
+                    <p>Loading users...</p>
+                </div>
+            </div>
+            {% endif %}
+
 
             <!-- Favorites List -->
             <div class="games-list" id="favorites-list">
@@ -308,5 +321,70 @@ document.querySelectorAll('.remove-button').forEach(button => {
         }
     });
 });
+</script>
+<script>
+    {% if user.role == "admin" %}
+async function loadUsers() {
+    try {
+        const res = await fetch("/users/get/");
+        console.log(res.status, res.statusText); // <-- log status
+        const data = await res.json();
+        console.log(data)
+        const container = document.getElementById("users-container");
+        container.innerHTML = "";
+
+        if (data.users.length === 0) {
+            container.innerHTML = "<p>No users found.</p>";
+            return;
+        }
+
+        data.users.forEach(u => {
+            const div = document.createElement("div");
+            div.className = "game-item";
+            div.innerHTML = `
+                <div class="game-item-info">
+                    <h3 class="game-item-title">${u.username}</h3>
+                    <div class="game-item-meta">
+                        <span class="meta-badge mini">${u.email}</span>
+                        <span class="meta-badge mini">${u.role}</span>
+                    </div>
+                </div>
+                <div class="game-item-actions">
+                    ${u.role !== "admin" ? `<button class="remove-button" data-user-id="${u.id}">Delete</button>` : ""}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+
+        document.querySelectorAll(".remove-button").forEach(btn => {
+            btn.addEventListener("click", async function() {
+                if (!confirm("Delete this user?")) return;
+                const userId = this.dataset.userId;
+                const res = await fetch("/users/delete/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                    body: JSON.stringify({ user_id: userId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.closest(".game-item").remove();
+                } else {
+                    alert(data.error || "Failed to delete user");
+                }
+            });
+        });
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById("users-container").innerHTML = "<p>Failed to load users.</p>";
+    }
+}
+
+// Load users when Users tab is clicked
+document.querySelector('[data-tab="users"]')?.addEventListener("click", loadUsers);
+{% endif %}
 </script>
 {% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Two-Factor Authentication{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="main">
+    <h1>Two-Factor Authentication</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p style="color:red;">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if qr_code_base64 %}
+    <p>Scan this QR code with your authenticator app:</p>
+    <div style="text-align:center; margin:20px 0;">
+        <img src="data:image/png;base64,{{ qr_code_base64 }}" 
+             style="width:200px; height:200px; object-fit:contain;"/>
+    </div>
+    <p>Then enter the 6-digit code generated in your app below.</p>
+    {% else %}
+    <p>Enter the 6-digit code from your authenticator app:</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="wrap">
+            <input type="text" name="otp" placeholder="6-digit code" maxlength="6" required>
+        </div>
+        <button type="submit" class="button1">Verify</button>
+    </form>
+
+    <p><a href="{% url 'login' %}">Go back to login</a></p>
+</div>
+{% endblock %}
