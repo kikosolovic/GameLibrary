@@ -15,4 +15,7 @@ urlpatterns = [
     path("api/add-played/", views.add_played, name="add_played"),
     path("api/remove-from-favorite/", views.remove_from_favorites, name="remove_from_favorite"),
     path("api/remove-from-played/", views.remove_from_played, name="remove_from_played"),
+    path("verify-totp/", views.verify_totp, name="verify_totp"),
+    path("users/get/", views.get_users, name="get_users"),
+    path("users/delete/", views.delete_user , name="delete_user"),
 ]

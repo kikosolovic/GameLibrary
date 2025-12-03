@@ -22,8 +22,11 @@ class Users(models.Model):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=100, unique=True)
     password = models.CharField(max_length=256)
+    role = models.CharField(max_length=20, default='user')
     favourite_genre = models.CharField(max_length=100, choices=GENRE_CHOICES)
     gender = models.CharField(max_length=6, choices=GENDER_CHOICES)
+    totp_secret = models.CharField(max_length=16, blank=True, null=True)
+    totp_verified = models.BooleanField(default=False)
 
     def __str__(self):
         return self.username
