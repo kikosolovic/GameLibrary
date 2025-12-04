@@ -74,3 +74,40 @@ class Game(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CustomList(models.Model):
+    user = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='custom_lists')
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_public = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-updated_at']
+        unique_together = ['user', 'name']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+    
+    def game_count(self):
+        return self.games.count()
+
+
+class CustomListGame(models.Model):
+    custom_list = models.ForeignKey(CustomList, on_delete=models.CASCADE, related_name='games')
+    game_id = models.CharField(max_length=100)
+    title = models.CharField(max_length=200)
+    cover = models.CharField(max_length=500)
+    genre = models.CharField(max_length=100, null=True, blank=True)
+    year = models.CharField(max_length=20, null=True, blank=True)
+    added_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-added_at']
+        unique_together = ['custom_list', 'game_id']
+    
+    def __str__(self):
+        return f"{self.title} in {self.custom_list.name}"

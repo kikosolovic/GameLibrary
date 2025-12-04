@@ -1,18 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.hashers import check_password
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
-from django.http import HttpResponse
-from django.http import JsonResponse
-from .models import FavoriteGame, PlayedGame
 
 import requests
 import json
 
 from .forms import RegistrationForm, LoginForm
-from .models import Users, Game
+from .models import Users, Game, FavoriteGame, PlayedGame, CustomList, CustomListGame
 
 
 # ---------------------------------------------
@@ -197,7 +194,7 @@ def game_detail(request, appid):
 
     context = {
         "game": {
-            "appid": appid,                # <-- added appid so templates send a valid id
+            "appid": appid,
             "name": name,
             "genre": genres or "Unknown",
             "description": short_desc or "No description available.",
@@ -261,17 +258,27 @@ def register_view(request):
 # ---------------------------------------------
 
 def profile_view(request):
+    """Profile view with integrated custom lists"""
     user_id = request.session.get('user_id')
     if not user_id:
         return redirect('login')
 
     user = Users.objects.get(id=user_id)
 
+    # Favorite games
     favorite_games_qs = FavoriteGame.objects.filter(user=user)
-    played_games_qs = PlayedGame.objects.filter(user=user)
-
     favorite_games = list(favorite_games_qs)
+
+    # Played games
+    played_games_qs = PlayedGame.objects.filter(user=user)
     played_games = list(played_games_qs)
+
+    # Custom lists
+    custom_lists = CustomList.objects.filter(user=user)
+    
+    # Add game count to each list
+    for lst in custom_lists:
+        lst.game_count = CustomListGame.objects.filter(custom_list=lst).count()
 
     def attach_appid(obj):
         gid = (obj.game_id or "").strip()
@@ -290,10 +297,14 @@ def profile_view(request):
         "played_games": played_games,
         "favorites_count": len(favorite_games),
         "played_count": len(played_games),
+        "custom_lists": custom_lists,
+        "custom_lists_count": custom_lists.count(),
     })
 
-def edit_profile_view(request):
-    return HttpResponse("Edit profile page here")
+
+# ---------------------------------------------
+#   FAVORITES & PLAYED GAMES
+# ---------------------------------------------
 
 def add_favorite(request):
     if request.method != "POST":
@@ -330,6 +341,7 @@ def add_favorite(request):
 
     return JsonResponse({"success": True})
 
+
 def add_played(request):
     if request.method != "POST":
         return JsonResponse({"success": False}, status=405)
@@ -365,9 +377,6 @@ def add_played(request):
 
     return JsonResponse({"success": True})
 
-# ---------------------------------------------
-#   REMOVE FAVORITES / PLAYED
-# ---------------------------------------------
 
 @require_POST
 def remove_from_favorites(request):
@@ -406,7 +415,216 @@ def remove_from_played(request):
 
 
 # ---------------------------------------------
-#   SEARCH
+#   CUSTOM LISTS
+# ---------------------------------------------
+
+@require_POST
+def create_list(request):
+    """Create a new custom list"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip()
+        
+        if not name:
+            return JsonResponse({'success': False, 'error': 'List name required'}, status=400)
+        
+        # Check if list with this name already exists
+        if CustomList.objects.filter(user_id=user_id, name=name).exists():
+            return JsonResponse({'success': False, 'error': 'List with this name already exists'}, status=400)
+        
+        custom_list = CustomList.objects.create(
+            user_id=user_id,
+            name=name,
+            description=description
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'list_id': custom_list.id,
+            'name': custom_list.name
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_POST
+def delete_list(request):
+    """Delete a custom list"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        list_id = data.get('list_id')
+        
+        custom_list = get_object_or_404(CustomList, id=list_id, user_id=user_id)
+        custom_list.delete()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_POST
+def edit_list(request):
+    """Edit a custom list name and description"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        list_id = data.get('list_id')
+        name = data.get('name', '').strip()
+        description = data.get('description', '').strip()
+        
+        if not name:
+            return JsonResponse({'success': False, 'error': 'List name required'}, status=400)
+        
+        custom_list = get_object_or_404(CustomList, id=list_id, user_id=user_id)
+        
+        # Check if another list has this name
+        if CustomList.objects.filter(user_id=user_id, name=name).exclude(id=list_id).exists():
+            return JsonResponse({'success': False, 'error': 'List with this name already exists'}, status=400)
+        
+        custom_list.name = name
+        custom_list.description = description
+        custom_list.save()
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_POST
+def add_to_list(request):
+    """Add a game to a custom list"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        list_id = data.get('list_id')
+        game_id = str(data.get('game_id', '')).strip()
+        title = data.get('title', '')
+        cover = data.get('cover', '')
+        genre = data.get('genre', '')
+        year = data.get('year', '')
+        
+        if not game_id.isdigit():
+            return JsonResponse({'success': False, 'error': 'Invalid game ID'}, status=400)
+        
+        custom_list = get_object_or_404(CustomList, id=list_id, user_id=user_id)
+        
+        # Check if game already in list
+        if CustomListGame.objects.filter(custom_list=custom_list, game_id=game_id).exists():
+            return JsonResponse({'success': False, 'error': 'Game already in this list'}, status=400)
+        
+        CustomListGame.objects.create(
+            custom_list=custom_list,
+            game_id=game_id,
+            title=title,
+            cover=cover,
+            genre=genre,
+            year=year
+        )
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@require_POST
+def remove_from_list(request):
+    """Remove a game from a custom list"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        data = json.loads(request.body)
+        list_id = data.get('list_id')
+        game_id = str(data.get('game_id', '')).strip()
+        
+        if not game_id.isdigit():
+            return JsonResponse({'success': False, 'error': 'Invalid game ID'}, status=400)
+        
+        custom_list = get_object_or_404(CustomList, id=list_id, user_id=user_id)
+        deleted_count, _ = CustomListGame.objects.filter(
+            custom_list=custom_list,
+            game_id=game_id
+        ).delete()
+        
+        return JsonResponse({'success': True, 'deleted': deleted_count})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def get_user_lists(request):
+    """Get all lists for a user (for dropdown in game detail)"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        lists = CustomList.objects.filter(user_id=user_id).values('id', 'name')
+        return JsonResponse({
+            'success': True,
+            'lists': list(lists)
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def get_list_games(request):
+    """API endpoint to get all games in a specific list"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Not logged in'}, status=403)
+    
+    try:
+        list_id = request.GET.get('list_id')
+        if not list_id:
+            return JsonResponse({'success': False, 'error': 'list_id required'}, status=400)
+        
+        custom_list = get_object_or_404(CustomList, id=list_id, user_id=user_id)
+        games = CustomListGame.objects.filter(custom_list=custom_list)
+        
+        games_data = []
+        for game in games:
+            game_dict = {
+                'game_id': game.game_id,
+                'title': game.title,
+                'cover': game.cover,
+                'genre': game.genre,
+                'year': game.year,
+                'added_at': game.added_at.strftime('%Y-%m-%d'),
+            }
+            # Try to convert game_id to appid
+            try:
+                game_dict['appid'] = int(game.game_id)
+            except (ValueError, TypeError):
+                game_dict['appid'] = None
+            games_data.append(game_dict)
+        
+        return JsonResponse({
+            'success': True,
+            'list_name': custom_list.name,
+            'games': games_data
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ---------------------------------------------
+#   SEARCH & FILTER
 # ---------------------------------------------
 
 def search_api(request):
@@ -433,6 +651,7 @@ def search_view(request):
     games = Game.objects.filter(name__icontains=query)
 
     return render(request, 'search.html', {'query': query, 'games': games})
+
 
 def filter_games_api(request):
     qs = Game.objects.all()

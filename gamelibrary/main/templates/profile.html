@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/profile.css' %}">
+<link rel="stylesheet" href="{% static 'css/profile-lists.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -41,6 +42,11 @@
                         <span class="stat-number">{{ played_count|default:0 }}</span>
                         <span class="stat-label">Played</span>
                     </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">{{ custom_lists_count|default:0 }}</span>
+                        <span class="stat-label">Lists</span>
+                    </div>
                 </div>
             </div>
 
@@ -61,9 +67,6 @@
                 {% endif %}
                 
                 <div class="profile-actions">
-                    <!-- <button class="action-button edit-profile">
-                        Edit Profile
-                    </button> -->
                     <button class="action-button secondary logout">
                         Logout
                     </button>
@@ -81,10 +84,13 @@
             <!-- Tab Navigation -->
             <div class="games-tabs">
                 <button class="tab-button active" data-tab="favorites">
-                     My Favorites
+                     Favorites
                 </button>
                 <button class="tab-button" data-tab="played">
-                     Played Games
+                     Played
+                </button>
+                <button class="tab-button" data-tab="custom-lists">
+                     My Lists
                 </button>
             </div>
 
@@ -111,16 +117,16 @@
                                 <span>{{ game.rating|default:"9.0" }}/10</span>
                             </div>
                         </div>
-                            <div class="game-item-actions">
-                                {% if game.appid %}
-                                    <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
-                                {% else %}
-                                    <span class="view-button disabled">Invalid</span>
-                                {% endif %}
-                                <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="favorite">
-                                    Remove
-                                </button>
-                            </div>
+                        <div class="game-item-actions">
+                            {% if game.appid %}
+                                <a href="{% url 'game_detail' game.appid %}" class="view-button">View</a>
+                            {% else %}
+                                <span class="view-button disabled">Invalid</span>
+                            {% endif %}
+                            <button class="remove-button" data-game-id="{{ game.appid|default:'' }}" data-type="favorite">
+                                Remove
+                            </button>
+                        </div>
                     </div>
                     {% endfor %}
                 {% else %}
@@ -169,9 +175,100 @@
                     </div>
                 {% endif %}
             </div>
+
+            <!-- Custom Lists Tab -->
+            <div class="games-list custom-lists-section" id="custom-lists-list" style="display: none;">
+                
+                <!-- Create List Button -->
+                <div class="create-list-header">
+                    <button class="create-list-btn" id="createListBtn">
+                        + Create New List
+                    </button>
+                </div>
+
+                <!-- Lists Grid -->
+                <div class="custom-lists-grid" id="customListsGrid">
+                    {% if custom_lists %}
+                        {% for list in custom_lists %}
+                        <div class="custom-list-card" data-list-id="{{ list.id }}">
+                            <div class="list-card-header">
+                                <h4 class="list-card-name">{{ list.name }}</h4>
+                                <div class="list-card-actions">
+                                    <button class="list-action-icon edit-list-btn" 
+                                            data-list-id="{{ list.id }}"
+                                            data-list-name="{{ list.name }}"
+                                            data-list-desc="{{ list.description|default:'' }}"
+                                            title="Edit">✏️</button>
+                                    <button class="list-action-icon delete-list-btn"
+                                            data-list-id="{{ list.id }}"
+                                            data-list-name="{{ list.name }}"
+                                            title="Delete">🗑️</button>
+                                </div>
+                            </div>
+                            {% if list.description %}
+                            <p class="list-card-desc">{{ list.description }}</p>
+                            {% endif %}
+                            <div class="list-card-footer">
+                                <span class="list-game-count">🎮 {{ list.game_count }} game{{ list.game_count|pluralize }}</span>
+                                <button class="view-list-games-btn" data-list-id="{{ list.id }}">
+                                    View →
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <p>No custom lists yet!</p>
+                            <p class="empty-state-hint">Create your first list to organize your games.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Individual List View (Hidden by default) -->
+                <div class="list-detail-view" id="listDetailView" style="display: none;">
+                    <div class="list-detail-header">
+                        <button class="back-to-lists-btn" id="backToListsBtn">← Back to Lists</button>
+                        <h3 class="list-detail-title" id="listDetailTitle"></h3>
+                        <p class="list-detail-count" id="listDetailCount"></p>
+                    </div>
+                    <div class="list-games-container" id="listGamesContainer">
+                        <!-- Games will be loaded here -->
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- CREATE/EDIT LIST MODAL -->
+<div id="listModal" class="modal hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Create New List</h3>
+            <button class="modal-close" id="closeModal">×</button>
+        </div>
+        
+        <form id="listForm">
+            <div class="form-group">
+                <label for="listName">List Name *</label>
+                <input type="text" id="listName" name="name" placeholder="e.g., Want to Play" required maxlength="200">
+            </div>
+            
+            <div class="form-group">
+                <label for="listDescription">Description (optional)</label>
+                <textarea id="listDescription" name="description" placeholder="Describe this list..." rows="3" maxlength="500"></textarea>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+                <button type="submit" class="btn-submit" id="submitBtn">Create List</button>
+            </div>
+        </form>
+        
+        <input type="hidden" id="editListId">
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -201,11 +298,6 @@ document.querySelector('.book-overlay').addEventListener('click', function(e) {
     if (e.target === this) window.location.href = "{% url 'library' %}";
 });
 
-// /* Edit profile */
-// document.querySelector('.edit-profile').addEventListener('click', function() {
-//     window.location.href = "{% url 'edit_profile' %}";
-// });
-
 /* Logout */
 document.querySelector('.logout').addEventListener('click', function() {
     if (confirm('Are you sure you want to logout?')) {
@@ -213,14 +305,11 @@ document.querySelector('.logout').addEventListener('click', function() {
     }
 });
 
-/* Remove game: animate item out, update counter, show empty state
-   - Uses transitionend where supported.
-   - Uses timeout fallback so item is removed even if transitionend doesn't fire.
-*/
+/* Remove game from favorites/played */
 document.querySelectorAll('.remove-button').forEach(button => {
     button.addEventListener('click', async function() {
         const gameId = this.dataset.gameId;
-        const type = this.dataset.type; // 'favorite' or 'played'
+        const type = this.dataset.type;
 
         if (!confirm(`Remove this game from your ${type} list?`)) return;
 
@@ -240,27 +329,21 @@ document.querySelectorAll('.remove-button').forEach(button => {
                 return;
             }
 
-            // animate removal
             const item = this.closest('.game-item');
             if (!item) return;
 
-            // measure and lock the height so transition to 0 works
             const rect = item.getBoundingClientRect();
             item.style.height = rect.height + 'px';
             item.style.minHeight = rect.height + 'px';
 
-            // Force reflow then add class to trigger CSS transition
-            // (reading offsetHeight forces layout)
             void item.offsetHeight;
             item.classList.add('removing');
 
-            // cleanup helper (only runs once)
             let cleaned = false;
             const cleanup = () => {
                 if (cleaned) return;
                 cleaned = true;
 
-                // remove listeners and inline sizing
                 item.removeEventListener('transitionend', onEnd);
                 item.style.height = '';
                 item.style.minHeight = '';
@@ -268,7 +351,6 @@ document.querySelectorAll('.remove-button').forEach(button => {
                 const parentList = item.parentElement;
                 item.remove();
 
-                // update counters (assumes first .stat-number is favorites, second is played)
                 const statEls = document.querySelectorAll('.stat-number');
                 if (statEls.length >= 2) {
                     if (type === 'favorite') {
@@ -278,7 +360,6 @@ document.querySelectorAll('.remove-button').forEach(button => {
                     }
                 }
 
-                // if list empty show empty-state
                 if (parentList && !parentList.querySelector('.game-item')) {
                     const empty = document.createElement('div');
                     empty.className = 'empty-state';
@@ -291,14 +372,12 @@ document.querySelectorAll('.remove-button').forEach(button => {
                 }
             };
 
-            // transitionend listener (wait for height change)
             function onEnd(e) {
                 if (e.propertyName !== 'height') return;
                 cleanup();
             }
             item.addEventListener('transitionend', onEnd);
 
-            // fallback: ensure cleanup after transition duration if transitionend doesn't fire
             const FALLBACK_MS = 500;
             setTimeout(cleanup, FALLBACK_MS);
 
@@ -308,5 +387,255 @@ document.querySelectorAll('.remove-button').forEach(button => {
         }
     });
 });
+
+/* ========== CUSTOM LISTS FUNCTIONALITY ========== */
+
+const modal = document.getElementById('listModal');
+const modalTitle = document.getElementById('modalTitle');
+const listForm = document.getElementById('listForm');
+const listNameInput = document.getElementById('listName');
+const listDescInput = document.getElementById('listDescription');
+const editListIdInput = document.getElementById('editListId');
+const submitBtn = document.getElementById('submitBtn');
+const customListsGrid = document.getElementById('customListsGrid');
+const listDetailView = document.getElementById('listDetailView');
+
+// Open modal for creating
+document.getElementById('createListBtn')?.addEventListener('click', () => {
+    modalTitle.textContent = 'Create New List';
+    submitBtn.textContent = 'Create List';
+    listNameInput.value = '';
+    listDescInput.value = '';
+    editListIdInput.value = '';
+    modal.classList.remove('hidden');
+});
+
+// Close modal
+document.getElementById('closeModal').addEventListener('click', () => {
+    modal.classList.add('hidden');
+});
+
+document.getElementById('cancelBtn').addEventListener('click', () => {
+    modal.classList.add('hidden');
+});
+
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.classList.add('hidden');
+});
+
+// Submit form (create or edit)
+listForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = listNameInput.value.trim();
+    const description = listDescInput.value.trim();
+    const listId = editListIdInput.value;
+    
+    if (!name) {
+        alert('Please enter a list name');
+        return;
+    }
+    
+    const url = listId ? '/api/edit-list/' : '/api/create-list/';
+    const payload = { name, description };
+    if (listId) payload.list_id = parseInt(listId);
+    
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to save list');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('An error occurred');
+    }
+});
+
+// Edit list
+document.querySelectorAll('.edit-list-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const listId = btn.dataset.listId;
+        const listName = btn.dataset.listName;
+        const listDesc = btn.dataset.listDesc;
+        
+        modalTitle.textContent = 'Edit List';
+        submitBtn.textContent = 'Save Changes';
+        listNameInput.value = listName;
+        listDescInput.value = listDesc;
+        editListIdInput.value = listId;
+        modal.classList.remove('hidden');
+    });
+});
+
+// Delete list
+document.querySelectorAll('.delete-list-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const listId = btn.dataset.listId;
+        const listName = btn.dataset.listName;
+        
+        if (!confirm(`Delete "${listName}"? This will remove all games from this list.`)) return;
+        
+        try {
+            const res = await fetch('/api/delete-list/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ list_id: parseInt(listId) })
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+                const card = document.querySelector(`.custom-list-card[data-list-id="${listId}"]`);
+                if (card) {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        card.remove();
+                        // Update counter
+                        const statEls = document.querySelectorAll('.stat-number');
+                        if (statEls.length >= 3) {
+                            statEls[2].textContent = Math.max(0, parseInt(statEls[2].textContent || '0', 10) - 1);
+                        }
+                        // Check if empty
+                        if (!customListsGrid.querySelector('.custom-list-card')) {
+                            customListsGrid.innerHTML = '<div class="empty-state"><p>No custom lists yet!</p><p class="empty-state-hint">Create your first list to organize your games.</p></div>';
+                        }
+                    }, 300);
+                }
+            } else {
+                alert(data.error || 'Failed to delete list');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An error occurred');
+        }
+    });
+});
+
+// View list games
+document.querySelectorAll('.view-list-games-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const listId = btn.dataset.listId;
+        await loadListGames(listId);
+    });
+});
+
+// Back to lists
+document.getElementById('backToListsBtn')?.addEventListener('click', () => {
+    listDetailView.style.display = 'none';
+    customListsGrid.parentElement.querySelector('.create-list-header').style.display = 'block';
+    customListsGrid.style.display = 'grid';
+});
+
+// Load games for a specific list
+async function loadListGames(listId) {
+    try {
+        const res = await fetch(`/api/get-list-games/?list_id=${listId}`);
+        const data = await res.json();
+        
+        if (data.success) {
+            // Hide lists grid, show detail view
+            customListsGrid.parentElement.querySelector('.create-list-header').style.display = 'none';
+            customListsGrid.style.display = 'none';
+            listDetailView.style.display = 'block';
+            
+            // Set title and count
+            document.getElementById('listDetailTitle').textContent = data.list_name;
+            document.getElementById('listDetailCount').textContent = `${data.games.length} game${data.games.length !== 1 ? 's' : ''}`;
+            
+            // Render games
+            const container = document.getElementById('listGamesContainer');
+            if (data.games.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>This list is empty</p><p class="empty-state-hint">Add games from the library!</p></div>';
+            } else {
+                container.innerHTML = data.games.map(game => `
+                    <div class="game-item" data-game-id="${game.game_id}">
+                        <div class="game-item-cover">
+                            <img src="${game.cover || 'https://via.placeholder.com/60x80/3b2a20/f5e1c8?text=Game'}" alt="${game.title}">
+                        </div>
+                        <div class="game-item-info">
+                            <h3 class="game-item-title">${game.title}</h3>
+                            <div class="game-item-meta">
+                                ${game.genre ? `<span class="meta-badge mini">${game.genre}</span>` : ''}
+                                ${game.year ? `<span class="meta-badge mini">${game.year}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="game-item-actions">
+                            ${game.appid ? `<a href="/game/${game.appid}/" class="view-button">View</a>` : '<span class="view-button disabled">Invalid</span>'}
+                            <button class="remove-button remove-from-custom-list" data-game-id="${game.game_id}" data-list-id="${listId}">Remove</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add remove handlers
+                container.querySelectorAll('.remove-from-custom-list').forEach(btn => {
+                    btn.addEventListener('click', async function() {
+                        const gameId = this.dataset.gameId;
+                        const listId = this.dataset.listId;
+                        
+                        if (!confirm('Remove this game from the list?')) return;
+                        
+                        try {
+                            const res = await fetch('/api/remove-from-list/', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': getCookie('csrftoken')
+                                },
+                                body: JSON.stringify({ list_id: parseInt(listId), game_id: gameId })
+                            });
+                            
+                            const data = await res.json();
+                            if (data.success) {
+                                const item = this.closest('.game-item');
+                                item.style.opacity = '0';
+                                item.style.transform = 'scale(0.9)';
+                                setTimeout(() => {
+                                    item.remove();
+                                    // Reload if empty
+                                    if (!container.querySelector('.game-item')) {
+                                        loadListGames(listId);
+                                    } else {
+                                        // Update count
+                                        const count = container.querySelectorAll('.game-item').length;
+                                        document.getElementById('listDetailCount').textContent = `${count} game${count !== 1 ? 's' : ''}`;
+                                    }
+                                }, 300);
+                            } else {
+                                alert(data.error || 'Failed to remove game');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('An error occurred');
+                        }
+                    });
+                });
+            }
+        } else {
+            alert(data.error || 'Failed to load games');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('An error occurred');
+    }
+}
 </script>
 {% endblock %}

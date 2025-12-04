@@ -153,6 +153,7 @@
         {% if request.session.user_id %}
             <button id="btnFavorite" class="action-button">Add to Favorites ❤️</button>
             <button id="btnPlayed" class="action-button secondary">Mark as Played ✓</button>
+            <button id="btnAddToList" class="action-button tertiary">Add to List 📋</button>
         {% else %}
             <p><a href="{% url 'login' %}">Log in</a> to save games.</p>
         {% endif %}
@@ -162,6 +163,18 @@
   </div>
 </div>
 
+<!-- ADD TO LIST MODAL -->
+<div id="addToListModal" class="modal-list hidden">
+    <div class="modal-list-content">
+        <div class="modal-list-header">
+            <h3>Add to List</h3>
+            <button class="modal-list-close" id="closeListModal">×</button>
+        </div>
+        <div class="modal-list-body" id="listsContainer">
+            <p class="loading-text">Loading your lists...</p>
+        </div>
+    </div>
+</div>
 
 <!-- ========== SCRIPT 1: BOOK + IMAGES ========== -->
 <script>
@@ -214,17 +227,26 @@
 </script>
 
 
-<!-- ========== SCRIPT 2: FAVORITES + PLAYED ========== -->
+<!-- ========== SCRIPT 2: FAVORITES + PLAYED + CUSTOM LISTS ========== -->
 <script>
 const btnFav = document.getElementById("btnFavorite");
 const btnPlayed = document.getElementById("btnPlayed");
+const btnAddToList = document.getElementById("btnAddToList");
+const addToListModal = document.getElementById("addToListModal");
+const closeListModal = document.getElementById("closeListModal");
+const listsContainer = document.getElementById("listsContainer");
+
+function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
 
 function postJSON(url, data) {
     return fetch(url, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "X-CSRFToken": "{{ csrf_token }}",
+            "X-CSRFToken": getCookie('csrftoken'),
         },
         body: JSON.stringify(data)
     }).then(r => r.json());
@@ -232,23 +254,25 @@ function postJSON(url, data) {
 
 btnFav?.addEventListener("click", () => {
     postJSON("/api/add-favorite/", {
-        game_id: "{{ game.appid }}",          // FIXED
-        title: "{{ game.name|escapejs }}",    // FIXED
-        cover: "{{ game.image }}",            // FIXED
+        game_id: "{{ game.appid }}",
+        title: "{{ game.name|escapejs }}",
+        cover: "{{ game.image }}",
         genre: "{{ game.genre }}",
         year: "{{ game.release_date }}",
     }).then(res => {
         if (res.success) {
             btnFav.textContent = "Added ✓";
             btnFav.style.opacity = "0.6";
+        } else {
+            alert(res.error || "Failed to add to favorites");
         }
     });
 });
 
 btnPlayed?.addEventListener("click", () => {
     postJSON("/api/add-played/", {
-        game_id: "{{ game.appid }}",          // FIXED
-        title: "{{ game.name|escapejs }}",    // FIXED
+        game_id: "{{ game.appid }}",
+        title: "{{ game.name|escapejs }}",
         cover: "{{ game.image }}",
         genre: "{{ game.genre }}",
         year: "{{ game.release_date }}",
@@ -256,8 +280,277 @@ btnPlayed?.addEventListener("click", () => {
         if (res.success) {
             btnPlayed.textContent = "Marked ✓";
             btnPlayed.style.opacity = "0.6";
+        } else {
+            alert(res.error || "Failed to mark as played");
         }
     });
 });
+
+// Add to List functionality
+btnAddToList?.addEventListener("click", async () => {
+    listsContainer.innerHTML = '<p class="loading-text">Loading your lists...</p>';
+    addToListModal.classList.remove('hidden');
+    
+    try {
+        const res = await fetch('/api/get-user-lists/');
+        const data = await res.json();
+        
+        if (data.success && data.lists.length > 0) {
+            listsContainer.innerHTML = data.lists.map(list => `
+                <div class="list-option" data-list-id="${list.id}">
+                    <span class="list-option-name">${list.name}</span>
+                    <button class="list-option-btn">Add</button>
+                </div>
+            `).join('');
+            
+            // Attach click handlers
+            document.querySelectorAll('.list-option-btn').forEach(btn => {
+                btn.addEventListener('click', async function(e) {
+                    e.stopPropagation();
+                    const listId = this.closest('.list-option').dataset.listId;
+                    
+                    try {
+                        const addRes = await postJSON('/api/add-to-list/', {
+                            list_id: parseInt(listId),
+                            game_id: "{{ game.appid }}",
+                            title: "{{ game.name|escapejs }}",
+                            cover: "{{ game.image }}",
+                            genre: "{{ game.genre }}",
+                            year: "{{ game.release_date }}"
+                        });
+                        
+                        if (addRes.success) {
+                            this.textContent = "✓ Added";
+                            this.style.opacity = "0.6";
+                            this.disabled = true;
+                        } else {
+                            alert(addRes.error || "Failed to add to list");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert("An error occurred");
+                    }
+                });
+            });
+        } else {
+            listsContainer.innerHTML = `
+                <div class="no-lists-state">
+                    <p>You don't have any lists yet.</p>
+                    <a href="{% url 'profile' %}" class="create-list-link">Go to profile to create a list</a>
+                </div>
+            `;
+        }
+    } catch (err) {
+        console.error(err);
+        listsContainer.innerHTML = '<p class="error-text">Failed to load lists</p>';
+    }
+});
+
+closeListModal?.addEventListener('click', () => {
+    addToListModal.classList.add('hidden');
+});
+
+addToListModal?.addEventListener('click', (e) => {
+    if (e.target === addToListModal) {
+        addToListModal.classList.add('hidden');
+    }
+});
 </script>
 
+<style>
+.book-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.4s ease, backdrop-filter 0.4s ease, -webkit-backdrop-filter 0.4s ease;
+}
+
+.book-overlay.is-visible {
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-list {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 999999 !important; /* SUPER HIGH - above everything */
+    backdrop-filter: blur(8px) !important;
+}
+
+.modal-list.hidden {
+    display: none !important;
+}
+
+.modal-list-content {
+    background: #f5e1c8;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    animation: modalSlideIn 0.3s ease;
+    position: relative;
+    z-index: 1000000; /* EVEN HIGHER */
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid #d4b896;
+}
+
+.modal-list-header h3 {
+    color: #3b2a20;
+    font-size: 1.5rem;
+}
+
+.modal-list-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #3b2a20;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-list-close:hover {
+    color: #a0653c;
+}
+
+.modal-list-body {
+    padding: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.loading-text,
+.error-text {
+    text-align: center;
+    color: #6b4423;
+    font-style: italic;
+}
+
+.list-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    background: rgba(255, 255, 255, 0.6);
+    border: 2px solid #d4b896;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.list-option:hover {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #a0653c;
+}
+
+.list-option-name {
+    color: #3b2a20;
+    font-weight: bold;
+    font-size: 1.05rem;
+}
+
+.list-option-btn {
+    background: #a0653c;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.list-option-btn:hover:not(:disabled) {
+    background: #c07845;
+    transform: scale(1.05);
+}
+
+.list-option-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.no-lists-state {
+    text-align: center;
+    padding: 2rem;
+}
+
+.no-lists-state p {
+    color: #6b4423;
+    margin-bottom: 1.5rem;
+}
+
+.create-list-link {
+    display: inline-block;
+    background: #a0653c;
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.create-list-link:hover {
+    background: #c07845;
+    transform: translateY(-2px);
+}
+
+.action-button.tertiary {
+    background: #6b4423;
+}
+
+.action-button.tertiary:hover {
+    background: #8a5a2e;
+}
+
+.modal-list-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-list-body::-webkit-scrollbar-track {
+    background: rgba(212, 184, 150, 0.2);
+    border-radius: 4px;
+}
+
+.modal-list-body::-webkit-scrollbar-thumb {
+    background: #a0653c;
+    border-radius: 4px;
+}
+
+.modal-list-body::-webkit-scrollbar-thumb:hover {
+    background: #c07845;
+}
+</style>
