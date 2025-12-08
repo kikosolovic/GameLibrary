@@ -21,4 +21,5 @@ urlpatterns = [
     path('api/remove-from-list/', views.remove_from_list, name='remove_from_list'),
     path('api/get-user-lists/', views.get_user_lists, name='get_user_lists'),
     path('api/get-list-games/', views.get_list_games, name='get_list_games'),
+    path('api/validate-list-field/', views.validate_list_field, name='validate_list_field'),
 ]

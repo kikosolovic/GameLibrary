@@ -8,6 +8,10 @@ from django.db.models import Q
 import requests
 import json
 
+# NEW: Import and initialize the profanity library
+from better_profanity import profanity
+profanity.load_censor_words()
+
 from .forms import RegistrationForm, LoginForm
 from .models import Users, Game, FavoriteGame, PlayedGame, CustomList, CustomListGame
 
@@ -430,8 +434,19 @@ def create_list(request):
         name = data.get('name', '').strip()
         description = data.get('description', '').strip()
         
+        # Validation checks (also done in validate_list_field)
         if not name:
             return JsonResponse({'success': False, 'error': 'List name required'}, status=400)
+            
+        if len(name) < 3:
+            return JsonResponse({'success': False, 'error': 'List name too short'}, status=400)
+            
+        # Profanity Check (Name & Description)
+        if profanity.contains_profanity(name):
+            return JsonResponse({'success': False, 'error': 'Name contains inappropriate content'}, status=400)
+            
+        if description and profanity.contains_profanity(description):
+            return JsonResponse({'success': False, 'error': 'Description contains inappropriate content'}, status=400)
         
         # Check if list with this name already exists
         if CustomList.objects.filter(user_id=user_id, name=name).exists():
@@ -486,6 +501,13 @@ def edit_list(request):
         
         if not name:
             return JsonResponse({'success': False, 'error': 'List name required'}, status=400)
+            
+        # Profanity Check (Name & Description)
+        if profanity.contains_profanity(name):
+            return JsonResponse({'success': False, 'error': 'Name contains inappropriate content'}, status=400)
+            
+        if description and profanity.contains_profanity(description):
+            return JsonResponse({'success': False, 'error': 'Description contains inappropriate content'}, status=400)
         
         custom_list = get_object_or_404(CustomList, id=list_id, user_id=user_id)
         
@@ -621,6 +643,41 @@ def get_list_games(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+def validate_list_field(request):
+    """Real-time validation API for custom list name and description"""
+    field = request.GET.get('field')
+    value = request.GET.get('value', '').strip()
+    user_id = request.session.get('user_id')
+    
+    if not user_id:
+        return JsonResponse({'valid': False, 'error': 'User not logged in'})
+    
+    if field == 'name':
+        # 1. Length Validation
+        if len(value) < 3:
+            return JsonResponse({'valid': False, 'error': 'Name must be at least 3 characters'})
+        
+        # 2. Content Moderation
+        if profanity.contains_profanity(value):
+            return JsonResponse({'valid': False, 'error': 'Name contains inappropriate content'})
+            
+        # 3. Uniqueness Check
+        exclude_id = request.GET.get('exclude_id')
+        query = CustomList.objects.filter(user_id=user_id, name__iexact=value)
+        if exclude_id:
+            query = query.exclude(id=exclude_id)
+            
+        if query.exists():
+            return JsonResponse({'valid': False, 'error': 'You already have a list with this name'})
+
+    elif field == 'description':
+        # 1. Content Moderation
+        if profanity.contains_profanity(value):
+            return JsonResponse({'valid': False, 'error': 'Description contains inappropriate content'})
+    
+    return JsonResponse({'valid': True})
 
 
 # ---------------------------------------------

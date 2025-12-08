@@ -6,19 +6,40 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/profile.css' %}">
 <link rel="stylesheet" href="{% static 'css/profile-lists.css' %}">
+<style>
+/* Styling for validation feedback */
+.validation-feedback {
+    font-size: 0.85rem;
+    margin-top: 4px;
+    min-height: 1.2em;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+.validation-feedback.error { color: #c74444; }
+.validation-feedback.success { color: #4a7c59; }
+.validation-feedback.checking { color: #6b4423; font-style: italic; }
+
+.char-count {
+    font-size: 0.75rem;
+    color: #6b4423;
+    text-align: right;
+    margin-top: 2px;
+}
+
+/* Visual cue on the input itself */
+input.invalid, textarea.invalid { border-color: #c74444; box-shadow: 0 0 0 2px rgba(199, 68, 68, 0.2); }
+input.valid, textarea.valid { border-color: #4a7c59; }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="book-overlay">
     <div class="open-book">
-        <!-- Book spine -->
         <div class="book-spine"></div>
 
-        <!-- Left page - User Info -->
         <div class="book-page-left">
             <div class="page-lines"></div>
             
-            <!-- Profile Header -->
             <div class="profile-header">
                 <div class="profile-avatar">
                     {% if user.avatar %}
@@ -50,7 +71,6 @@
                 </div>
             </div>
 
-            <!-- User Details Section -->
             <div class="user-details">
                 <h2 class="section-title">About Me</h2>
                 
@@ -74,14 +94,11 @@
             </div>
         </div>
 
-        <!-- Right page - Games Lists -->
         <div class="book-page-right">
             <div class="page-lines"></div>
             
-            <!-- Close bookmark -->
             <div class="close-bookmark" title="Close">×</div>
 
-            <!-- Tab Navigation -->
             <div class="games-tabs">
                 <button class="tab-button active" data-tab="favorites">
                      Favorites
@@ -94,7 +111,6 @@
                 </button>
             </div>
 
-            <!-- Favorites List -->
             <div class="games-list" id="favorites-list">
                 {% if favorite_games %}
                     {% for game in favorite_games %}
@@ -137,7 +153,6 @@
                 {% endif %}
             </div>
 
-            <!-- Played Games List -->
             <div class="games-list" id="played-list" style="display: none;">
                 {% if played_games %}
                     {% for game in played_games %}
@@ -176,17 +191,14 @@
                 {% endif %}
             </div>
 
-            <!-- Custom Lists Tab -->
             <div class="games-list custom-lists-section" id="custom-lists-list" style="display: none;">
                 
-                <!-- Create List Button -->
                 <div class="create-list-header">
                     <button class="create-list-btn" id="createListBtn">
                         + Create New List
                     </button>
                 </div>
 
-                <!-- Lists Grid -->
                 <div class="custom-lists-grid" id="customListsGrid">
                     {% if custom_lists %}
                         {% for list in custom_lists %}
@@ -224,7 +236,6 @@
                     {% endif %}
                 </div>
 
-                <!-- Individual List View (Hidden by default) -->
                 <div class="list-detail-view" id="listDetailView" style="display: none;">
                     <div class="list-detail-header">
                         <button class="back-to-lists-btn" id="backToListsBtn">← Back to Lists</button>
@@ -232,15 +243,13 @@
                         <p class="list-detail-count" id="listDetailCount"></p>
                     </div>
                     <div class="list-games-container" id="listGamesContainer">
-                        <!-- Games will be loaded here -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- CREATE/EDIT LIST MODAL -->
 <div id="listModal" class="modal hidden">
     <div class="modal-content">
         <div class="modal-header">
@@ -248,15 +257,34 @@
             <button class="modal-close" id="closeModal">×</button>
         </div>
         
-        <form id="listForm">
+        <form id="listForm" novalidate>
             <div class="form-group">
                 <label for="listName">List Name *</label>
-                <input type="text" id="listName" name="name" placeholder="e.g., Want to Play" required maxlength="200">
+                <input 
+                    type="text" 
+                    id="listName" 
+                    name="name" 
+                    placeholder="e.g., Want to Play" 
+                    required 
+                    maxlength="200"
+                    pattern="^[a-zA-Z0-9 _-]+$"
+                    autocomplete="off"
+                >
+                <div id="nameFeedback" class="validation-feedback"></div>
+                <div class="char-count"><span id="nameCharCount">0</span>/200</div>
             </div>
             
             <div class="form-group">
                 <label for="listDescription">Description (optional)</label>
-                <textarea id="listDescription" name="description" placeholder="Describe this list..." rows="3" maxlength="500"></textarea>
+                <textarea 
+                    id="listDescription" 
+                    name="description" 
+                    placeholder="Describe this list..." 
+                    rows="3" 
+                    maxlength="500"
+                ></textarea>
+                <div id="descFeedback" class="validation-feedback"></div>
+                <div class="char-count"><span id="descCharCount">0</span>/500</div>
             </div>
             
             <div class="modal-actions">
@@ -279,15 +307,43 @@ function getCookie(name) {
     return v ? v.pop() : '';
 }
 
-/* Tab switching */
-document.querySelectorAll('.tab-button').forEach(button => {
+/* =========================================================
+   TAB SWITCHING LOGIC (WITH PERSISTENCE)
+   ========================================================= */
+const tabs = document.querySelectorAll('.tab-button');
+const lists = document.querySelectorAll('.games-list');
+
+// 1. Function to activate a specific tab
+function activateTab(tabName) {
+    // Deactivate all
+    tabs.forEach(t => t.classList.remove('active'));
+    lists.forEach(l => l.style.display = 'none');
+
+    // Activate target
+    const targetBtn = document.querySelector(`.tab-button[data-tab="${tabName}"]`);
+    const targetList = document.getElementById(`${tabName}-list`);
+
+    if (targetBtn && targetList) {
+        targetBtn.classList.add('active');
+        targetList.style.display = 'block';
+        // Save to localStorage
+        localStorage.setItem('activeProfileTab', tabName);
+    }
+}
+
+// 2. On Load: Check storage, default to 'favorites' if empty
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTab = localStorage.getItem('activeProfileTab') || 'favorites';
+    activateTab(savedTab);
+});
+
+// 3. Click Listeners
+tabs.forEach(button => {
     button.addEventListener('click', function() {
-        document.querySelectorAll('.tab-button').forEach(tab => tab.classList.remove('active'));
-        this.classList.add('active');
-        document.querySelectorAll('.games-list').forEach(list => list.style.display = 'none');
-        document.getElementById(this.dataset.tab + '-list').style.display = 'block';
+        activateTab(this.dataset.tab);
     });
 });
+
 
 /* Close book */
 document.querySelector('.close-bookmark').addEventListener('click', function() {
@@ -301,6 +357,8 @@ document.querySelector('.book-overlay').addEventListener('click', function(e) {
 /* Logout */
 document.querySelector('.logout').addEventListener('click', function() {
     if (confirm('Are you sure you want to logout?')) {
+        // Clear tab memory on logout so next user starts fresh
+        localStorage.removeItem('activeProfileTab');
         window.location.href = "{% url 'logout' %}";
     }
 });
@@ -400,13 +458,187 @@ const submitBtn = document.getElementById('submitBtn');
 const customListsGrid = document.getElementById('customListsGrid');
 const listDetailView = document.getElementById('listDetailView');
 
+// --- NEW VALIDATION REFERENCES ---
+const nameFeedback = document.getElementById('nameFeedback');
+const descFeedback = document.getElementById('descFeedback');
+const nameCharCount = document.getElementById('nameCharCount');
+const descCharCount = document.getElementById('descCharCount');
+
+let nameTypingTimer;
+let descTypingTimer;
+const doneTypingInterval = 500; // Check server after 500ms
+
+// Regex Pattern for Name
+const validPattern = /^[a-zA-Z0-9 _-]+$/;
+
+// State flags to control submit button
+let isNameValid = false;
+let isDescValid = true; // Empty description is allowed by default
+
+function updateSubmitButton() {
+    submitBtn.disabled = !(isNameValid && isDescValid);
+}
+
+// Reset form UI when opening modal
+function resetValidationUI() {
+    if(listNameInput) {
+        listNameInput.classList.remove('valid', 'invalid');
+        listNameInput.value = '';
+    }
+    if(listDescInput) {
+        listDescInput.classList.remove('valid', 'invalid');
+        listDescInput.value = '';
+    }
+    if(nameFeedback) {
+        nameFeedback.className = 'validation-feedback';
+        nameFeedback.textContent = '';
+    }
+    if(descFeedback) {
+        descFeedback.className = 'validation-feedback';
+        descFeedback.textContent = '';
+    }
+    if(nameCharCount) nameCharCount.textContent = '0';
+    if(descCharCount) descCharCount.textContent = '0';
+    
+    isNameValid = false;
+    isDescValid = true;
+    updateSubmitButton();
+}
+
+// ---------------------------
+// NAME VALIDATION LISTENER
+// ---------------------------
+if(listNameInput) {
+    listNameInput.addEventListener('input', function() {
+        const val = this.value;
+        const len = val.length;
+        if(nameCharCount) nameCharCount.textContent = len;
+        
+        clearTimeout(nameTypingTimer);
+        this.classList.remove('valid', 'invalid');
+        nameFeedback.className = 'validation-feedback';
+        nameFeedback.textContent = '';
+        
+        isNameValid = false;
+        updateSubmitButton();
+
+        // Client-side checks
+        if (len === 0) {
+            nameFeedback.textContent = 'List name is required.';
+            nameFeedback.classList.add('error');
+            this.classList.add('invalid');
+            return;
+        }
+        if (len < 3) {
+            nameFeedback.textContent = 'Name must be at least 3 characters.';
+            nameFeedback.classList.add('error');
+            this.classList.add('invalid');
+            return;
+        }
+        if (!validPattern.test(val)) {
+            nameFeedback.textContent = 'Only letters, numbers, spaces, hyphens and underscores allowed.';
+            nameFeedback.classList.add('error');
+            this.classList.add('invalid');
+            return;
+        }
+
+        // Wait then check server (uniqueness + profanity)
+        nameFeedback.textContent = 'Checking availability...';
+        nameFeedback.classList.add('checking');
+        
+        nameTypingTimer = setTimeout(() => {
+            validateField('name', val.trim());
+        }, doneTypingInterval);
+    });
+}
+
+// ---------------------------
+// DESCRIPTION VALIDATION LISTENER
+// ---------------------------
+if(listDescInput) {
+    listDescInput.addEventListener('input', function() {
+        const val = this.value;
+        const len = val.length;
+        if(descCharCount) descCharCount.textContent = len;
+        
+        clearTimeout(descTypingTimer);
+        this.classList.remove('valid', 'invalid');
+        descFeedback.className = 'validation-feedback';
+        descFeedback.textContent = '';
+        
+        // Default state: valid unless profanity found later
+        isDescValid = true; 
+        updateSubmitButton();
+
+        if (len === 0) return; // Empty is fine
+
+        // Wait then check server (profanity)
+        descFeedback.textContent = 'Checking content...';
+        descFeedback.classList.add('checking');
+        
+        descTypingTimer = setTimeout(() => {
+            validateField('description', val.trim());
+        }, doneTypingInterval);
+    });
+}
+
+// ---------------------------
+// GENERIC API VALIDATION
+// ---------------------------
+async function validateField(field, value) {
+    const listId = editListIdInput.value; // Exclude current if editing
+    const params = new URLSearchParams({ 
+        field: field,
+        value: value,
+        exclude_id: listId || '' 
+    });
+
+    try {
+        const res = await fetch(`/api/validate-list-field/?${params}`);
+        const data = await res.json();
+
+        // Target correct elements
+        let inputEl, feedbackEl;
+        if (field === 'name') {
+            inputEl = listNameInput;
+            feedbackEl = nameFeedback;
+        } else {
+            inputEl = listDescInput;
+            feedbackEl = descFeedback;
+        }
+
+        feedbackEl.classList.remove('checking');
+        
+        if (data.valid) {
+            feedbackEl.textContent = '✓ OK';
+            feedbackEl.classList.add('success');
+            inputEl.classList.add('valid');
+            
+            if(field === 'name') isNameValid = true;
+            else isDescValid = true;
+            
+        } else {
+            feedbackEl.textContent = `✗ ${data.error}`;
+            feedbackEl.classList.add('error');
+            inputEl.classList.add('invalid');
+            
+            if(field === 'name') isNameValid = false;
+            else isDescValid = false;
+        }
+    } catch (err) {
+        console.error('Validation error:', err);
+    }
+    updateSubmitButton();
+}
+
+
 // Open modal for creating
 document.getElementById('createListBtn')?.addEventListener('click', () => {
     modalTitle.textContent = 'Create New List';
     submitBtn.textContent = 'Create List';
-    listNameInput.value = '';
-    listDescInput.value = '';
     editListIdInput.value = '';
+    
+    resetValidationUI(); 
     modal.classList.remove('hidden');
 });
 
@@ -427,14 +659,12 @@ modal.addEventListener('click', (e) => {
 listForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Double check just in case
+    if (submitBtn.disabled) return;
+
     const name = listNameInput.value.trim();
     const description = listDescInput.value.trim();
     const listId = editListIdInput.value;
-    
-    if (!name) {
-        alert('Please enter a list name');
-        return;
-    }
     
     const url = listId ? '/api/edit-list/' : '/api/create-list/';
     const payload = { name, description };
@@ -453,6 +683,7 @@ listForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         
         if (data.success) {
+            // When we reload, the persisted tab logic will run and keep us on 'custom-lists'
             location.reload();
         } else {
             alert(data.error || 'Failed to save list');
@@ -473,9 +704,24 @@ document.querySelectorAll('.edit-list-btn').forEach(btn => {
         
         modalTitle.textContent = 'Edit List';
         submitBtn.textContent = 'Save Changes';
+        
+        // 1. Reset UI first
+        resetValidationUI();
+        
+        // 2. Set values
         listNameInput.value = listName;
         listDescInput.value = listDesc;
         editListIdInput.value = listId;
+        
+        // 3. Update character counts
+        if(nameCharCount) nameCharCount.textContent = listName.length;
+        if(descCharCount) descCharCount.textContent = listDesc.length;
+        
+        // 4. Mark fields as valid initially (since they came from server)
+        isNameValid = true;
+        isDescValid = true;
+        updateSubmitButton();
+        
         modal.classList.remove('hidden');
     });
 });

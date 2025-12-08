@@ -469,6 +469,8 @@ body {
   text-align: center;
   padding: 1rem;
   color: #6b4423;
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .empty-state p {
@@ -604,11 +606,11 @@ body {
 .create-list-btn {
     background: linear-gradient(135deg, #a0653c, #c07845);
     color: #fff;
-    padding: 0.9rem 2rem;
+    padding: 0.8rem 1.2rem;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: bold;
-    font-size: 1rem;
+    font-size: 0.9  rem;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -662,6 +664,10 @@ body {
     flex: 1;
     margin: 0;
     margin-right: 0.5rem;
+    min-width: 0;       
+    word-wrap: break-word;     
+    overflow-wrap: break-word; 
+    word-break: break-word;    
 }
 
 .list-card-actions {
@@ -688,6 +694,8 @@ body {
     font-size: 0.85rem;
     margin-bottom: 0.8rem;
     line-height: 1.4;
+    overflow-wrap: break-word; 
+    word-break: break-word;
 }
 
 .list-card-footer {
