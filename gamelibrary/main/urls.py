@@ -15,4 +15,7 @@ urlpatterns = [
     path("api/add-played/", views.add_played, name="add_played"),
     path("api/remove-from-favorite/", views.remove_from_favorites, name="remove_from_favorite"),
     path("api/remove-from-played/", views.remove_from_played, name="remove_from_played"),
+    path("api/add-game", views.add_game, name="add_game"),
+    path("api/get-fav-games", views.get_fav_games, name="get_favourite_games"),
+    path("api/update-price", views.update_price, name="update_price"),
 ]

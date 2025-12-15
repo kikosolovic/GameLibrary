@@ -7,12 +7,13 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.http import JsonResponse
 from .models import FavoriteGame, PlayedGame
-
+from rest_framework.decorators import api_view
+from .serializers import GameSerializer,FavouriteGameSerializer
 import requests
 import json
 
 from .forms import RegistrationForm, LoginForm
-from .models import Users, Game
+from .models import Users, Game, FavoriteGame
 
 
 # ---------------------------------------------
@@ -501,3 +502,45 @@ def filter_games_api(request):
     } for g in qs]
 
     return JsonResponse({"results": results})
+
+
+#-inserting of new games that are not in the steam database
+@api_view(["POST"])
+def add_game( request ):
+    data = (request.data)
+    serializer = GameSerializer(data=data)
+    if serializer.is_valid():
+        serializer.save()
+        return JsonResponse(serializer.data, status=201)
+    return JsonResponse(serializer.errors, status=400)
+
+@api_view(["GET"])
+#-providing a list of favourite games for a specific user
+def get_fav_games( request ):
+    userid = request.GET.get('userid')
+    if not userid:
+        return JsonResponse({"error": "userid is required"}, status=400)
+
+    favorites = FavoriteGame.objects.filter(user_id=userid)
+
+    serializer = FavouriteGameSerializer(favorites, many=True)
+
+    return JsonResponse(serializer.data, safe=False, status=200)
+@api_view(["PUT"])
+#-external price update during various deals 
+def update_price( request ):
+    multiplier = request.GET.get('multiplier')
+    gameid = request.GET.get('gameid')
+    if not multiplier or not gameid:
+        return JsonResponse({"error": "price multiplier and gameid is required"}, status=400)
+    
+    game = Game.objects.get(appid = gameid)
+    if game:
+        if game.price == "Free":
+            return JsonResponse({"error":"game is already free"},status=200)
+
+        new_price = (float(game.price[:-4])*float(multiplier))
+        game.price = f"{new_price:.2f} USD"
+        game.save()
+        return JsonResponse(data={"status":"ok"},status=200)
+    return JsonResponse({"error":"no game with this id"}, status = 400)
