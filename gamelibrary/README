@@ -1,0 +1,15 @@
+How to Run
+
+Install dependencies:
+
+pip install django python-dotenv requests better-profanity
+
+Navigate to the project folder:
+
+cd gamelibrary
+
+Start the server:
+
+python manage.py runserver
+
+Open in browser: http://127.0.0.1:8000/
